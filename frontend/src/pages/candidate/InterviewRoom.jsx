@@ -149,7 +149,7 @@ function InterviewRoomInner() {
             }}
           >
             <div className="ai-speaking-indicator" style={{ height: 16, gap: 2 }}>
-              {[1,2,3].map(i => <div key={i} className="bar" style={{ height: 4, width: 3 }} />)}
+              {[1, 2, 3].map(i => <div key={i} className="bar" style={{ height: 4, width: 3 }} />)}
             </div>
             AI Speaking...
           </div>
@@ -216,7 +216,7 @@ function InterviewRoomInner() {
             marginTop: '0.75rem',
           }}>
             <div className="ai-speaking-indicator" style={{ height: 22 }}>
-              {[1,2,3,4,5].map(i => <div key={i} className="bar" style={{ height: 6 }} />)}
+              {[1, 2, 3, 4, 5].map(i => <div key={i} className="bar" style={{ height: 6 }} />)}
             </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>AI is speaking</div>

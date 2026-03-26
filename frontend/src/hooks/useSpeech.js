@@ -1,78 +1,70 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 
+const API_BASE = 'http://localhost:8000';
+
 export function useSpeech() {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const utteranceRef = useRef(null);
-  const voicesRef = useRef([]);
+  const audioRef = useRef(null);
 
-  // Pre-load voices (Chrome loads them asynchronously)
+  // Clean up on unmount
   useEffect(() => {
-    const loadVoices = () => {
-      voicesRef.current = window.speechSynthesis?.getVoices() || [];
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
     };
-    loadVoices();
-    window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
-    return () => window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices);
   }, []);
 
   const speak = useCallback((text, onEnd) => {
-    if (!('speechSynthesis' in window)) {
-      console.warn('Web Speech API not supported');
+    if (!text) {
       onEnd?.();
       return;
     }
 
     // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      setIsSpeaking(false);
+    }
 
-    const doSpeak = (voices) => {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
+    setIsSpeaking(true);
 
-      const preferred = voices.find(
-        (v) => v.lang === 'en-US' && v.name.includes('Google')
-      ) || voices.find((v) => v.lang === 'en-US') || voices[0];
-      if (preferred) utterance.voice = preferred;
+    try {
+      const url = `${API_BASE}/tts/speak?text=${encodeURIComponent(text)}`;
+      const audio = new Audio(url);
+      audioRef.current = audio;
 
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => {
+      audio.onended = () => {
         setIsSpeaking(false);
         onEnd?.();
       };
-      utterance.onerror = (e) => {
+
+      audio.onerror = (e) => {
+        console.error('Audio playback error', e);
         setIsSpeaking(false);
-        if (e.error !== 'canceled') onEnd?.();
+        onEnd?.();
       };
 
-      utteranceRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
-    };
-
-    // Voices may not be loaded yet in Chrome
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      doSpeak(voices);
-    } else {
-      // Wait for voices to become available
-      const handler = () => {
-        window.speechSynthesis.removeEventListener('voiceschanged', handler);
-        doSpeak(window.speechSynthesis.getVoices());
-      };
-      window.speechSynthesis.addEventListener('voiceschanged', handler);
-      // Fallback: if voiceschanged never fires, speak with no voice preference
-      setTimeout(() => {
-        if (!utteranceRef.current) {
-          window.speechSynthesis.removeEventListener('voiceschanged', handler);
-          doSpeak([]);
-        }
-      }, 500);
+      // Play the audio
+      audio.play().catch((err) => {
+        console.error('Failed to play audio:', err);
+        setIsSpeaking(false);
+        onEnd?.();
+      });
+    } catch (e) {
+      console.error('TTS execution error', e);
+      setIsSpeaking(false);
+      onEnd?.();
     }
   }, []);
 
   const stop = useCallback(() => {
-    window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
     setIsSpeaking(false);
   }, []);
 
