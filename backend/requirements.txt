@@ -8,6 +8,9 @@ python-multipart==0.0.20
 pydantic==2.10.4
 pydantic[email]
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+bcrypt==4.2.0
+mediapipe>=0.10.9
+opencv-python-headless>=4.9.0
+numpy>=1.26.0
 python-dotenv==1.0.1
 websockets==14.1

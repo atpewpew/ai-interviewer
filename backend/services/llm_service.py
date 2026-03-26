@@ -104,6 +104,7 @@ async def generate_report_data(
     job_description: str,
     all_turns: list[dict],
     proctoring_flags: list[dict],
+    proctoring_score: float = 100,
 ) -> dict:
     """Generate a comprehensive interview report."""
     system_prompt = "You are an expert interview evaluator. Analyze the complete interview and generate a detailed report."
@@ -134,7 +135,8 @@ Interview Turns:
 Proctoring Flags:
 {proctoring_str}
 
-Calculate proctoring_score: Start at 100, deduct 5 for low severity, 10 for medium, 20 for high severity flags.
+The proctoring system measured a proctoring_score of {proctoring_score}/100 (100 = clean session, 0 = severe issues). Use this exact value.
+If the proctoring_score is above 90, do NOT include any proctoring-related items in red_flags.
 
 Return JSON:
 {{
@@ -148,7 +150,6 @@ Return JSON:
   "recommendation": "Hire" | "Hold" | "Reject",
   "strengths": ["strength 1", "strength 2", ...],
   "red_flags": ["flag 1", ...],
-  "proctoring_score": <0-100>,
   "full_summary": "A detailed 3-5 sentence summary of the candidate's performance"
 }}"""
 

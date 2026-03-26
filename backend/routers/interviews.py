@@ -39,6 +39,38 @@ async def list_interviews(user: dict = Depends(get_current_user)):
     return [_format(r) for r in results]
 
 
+@router.get("/stats")
+async def get_dashboard_stats(user: dict = Depends(get_current_user)):
+    """Aggregate stats for the recruiter dashboard."""
+    if user["role"] != "recruiter":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Recruiter only")
+
+    uid = user["user_id"]
+    interviews = await db.interviews.find({"recruiter_id": uid}).to_list(200)
+    interview_ids = [str(i["_id"]) for i in interviews]
+
+    total_candidates = await db.candidates.count_documents({"interview_id": {"$in": interview_ids}})
+    completed_sessions = await db.sessions.count_documents({
+        "interview_id": {"$in": interview_ids},
+        "status": "completed",
+    })
+
+    # Average overall score from reports
+    pipeline = [
+        {"$match": {"interview_id": {"$in": interview_ids}}},
+        {"$group": {"_id": None, "avg": {"$avg": "$overall_score"}}},
+    ]
+    agg = await db.reports.aggregate(pipeline).to_list(1)
+    avg_score = round(agg[0]["avg"], 1) if agg and agg[0].get("avg") is not None else None
+
+    return {
+        "total_interviews": len(interviews),
+        "total_candidates": total_candidates,
+        "completed_sessions": completed_sessions,
+        "avg_score": avg_score,
+    }
+
+
 @router.get("/{interview_id}", response_model=InterviewResponse)
 async def get_interview(interview_id: str):
     doc = await db.interviews.find_one({"_id": ObjectId(interview_id)})

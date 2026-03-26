@@ -116,6 +116,7 @@ class ReportResponse(BaseModel):
     strengths: list[str]
     red_flags: list[str]
     proctoring_score: float
+    proctoring_flags: list[dict] = []
     full_summary: str
     generated_at: datetime
 
