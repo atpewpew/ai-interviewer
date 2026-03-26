@@ -2,31 +2,28 @@ import { CheckCircle } from 'lucide-react';
 
 export default function InterviewComplete() {
   return (
-    <div
-      className="min-vh-100 d-flex align-items-center justify-content-center"
-      style={{ background: 'linear-gradient(135deg, #f8f8fc 0%, #EBE4FF 100%)' }}
-    >
-      <div className="card-ios text-center" style={{ maxWidth: 500, padding: '3rem' }}>
+    <div className="page-container min-vh-100 d-flex align-items-center justify-content-center">
+      <div className="card-glass text-center fade-in" style={{ maxWidth: 500, padding: '3rem' }}>
         <div
           className="mx-auto mb-3"
           style={{
             width: 64,
             height: 64,
             borderRadius: 'var(--radius-full)',
-            background: '#e0ffe0',
+            background: 'var(--success-bg)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <CheckCircle size={32} color="#2e7d32" />
+          <CheckCircle size={32} color="var(--success)" />
         </div>
 
         <h1
           style={{
             fontFamily: 'var(--font-heading)',
             fontSize: '2.2rem',
-            color: 'var(--graphite-black)',
+            color: 'var(--text-primary)',
             marginBottom: '0.5rem',
           }}
         >

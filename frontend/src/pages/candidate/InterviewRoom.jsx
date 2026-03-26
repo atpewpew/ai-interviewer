@@ -126,7 +126,7 @@ function InterviewRoomInner() {
             Recording
             {/* Mini volume bar */}
             <div style={{ width: 50, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>
-              <div style={{ height: '100%', borderRadius: 2, background: '#fff', width: `${Math.max(5, volumeLevel * 100)}%`, transition: 'width 0.1s' }} />
+              <div style={{ height: '100%', borderRadius: 2, background: 'var(--text-primary)', width: `${Math.max(5, volumeLevel * 100)}%`, transition: 'width 0.1s' }} />
             </div>
           </div>
         )}
@@ -245,7 +245,7 @@ function InterviewRoomInner() {
               <div style={{
                 height: '100%',
                 borderRadius: 3,
-                background: 'white',
+                background: 'var(--text-primary)',
                 width: `${Math.max(3, volumeLevel * 100)}%`,
                 transition: 'width 0.1s ease',
               }} />
@@ -300,7 +300,7 @@ function InterviewRoomInner() {
           {interviewState === 'COMPLETED' && (
             <div className="text-center py-3">
               <AlertCircle size={32} color="var(--primary-purple)" className="mb-2" />
-              <h4 style={{ fontFamily: 'var(--font-heading)', color: 'var(--graphite-black)' }}>
+              <h4 style={{ fontFamily: 'var(--font-heading)', color: 'var(--text-primary)' }}>
                 INTERVIEW COMPLETE
               </h4>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>

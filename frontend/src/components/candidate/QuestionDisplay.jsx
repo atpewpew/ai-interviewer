@@ -13,7 +13,7 @@ export default function QuestionDisplay({ question }) {
         style={{
           fontFamily: 'var(--font-heading)',
           fontSize: '1.3rem',
-          color: 'var(--graphite-black)',
+          color: 'var(--text-primary)',
           margin: 0,
           lineHeight: 1.3,
           letterSpacing: '0.5px',

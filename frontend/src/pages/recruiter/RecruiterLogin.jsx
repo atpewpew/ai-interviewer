@@ -32,11 +32,8 @@ export default function RecruiterLogin() {
   };
 
   return (
-    <div
-      className="min-vh-100 d-flex align-items-center justify-content-center"
-      style={{ background: 'linear-gradient(135deg, #f8f8fc 0%, #EBE4FF 100%)' }}
-    >
-      <div className="card-ios" style={{ width: '100%', maxWidth: 420, padding: '2.5rem' }}>
+    <div className="page-container min-vh-100 d-flex align-items-center justify-content-center">
+      <div className="card-glass fade-in" style={{ width: '100%', maxWidth: 420, padding: '2.5rem' }}>
         <div className="text-center mb-4">
           <div
             className="mx-auto mb-3"
@@ -55,7 +52,7 @@ export default function RecruiterLogin() {
           >
             IO
           </div>
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--graphite-black)' }}>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--text-primary)' }}>
             {isRegister ? 'CREATE ACCOUNT' : 'WELCOME BACK'}
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
@@ -140,7 +137,7 @@ export default function RecruiterLogin() {
         <div className="text-center mt-3">
           <button
             className="btn btn-link"
-            style={{ color: 'var(--primary-purple)', fontSize: '0.85rem', textDecoration: 'none' }}
+            style={{ color: 'var(--lavender)', fontSize: '0.85rem', textDecoration: 'none' }}
             onClick={() => {
               setIsRegister(!isRegister);
               setError('');

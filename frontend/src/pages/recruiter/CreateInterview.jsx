@@ -60,14 +60,14 @@ export default function CreateInterview() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f8fc' }}>
+    <div className="page-container">
       <Navbar />
-      <div className="container py-4" style={{ maxWidth: 700 }}>
+      <div className="container py-4 page-content" style={{ maxWidth: 700 }}>
         <h1
           style={{
             fontFamily: 'var(--font-heading)',
             fontSize: '2rem',
-            color: 'var(--graphite-black)',
+            color: 'var(--text-primary)',
             marginBottom: '1.5rem',
           }}
         >
@@ -77,7 +77,7 @@ export default function CreateInterview() {
         {error && <div className="alert alert-danger py-2">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="card-ios mb-3">
+          <div className="card-glass mb-3">
             <div className="mb-3">
               <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>
                 Interview Title
@@ -119,7 +119,7 @@ export default function CreateInterview() {
             </div>
           </div>
 
-          <div className="card-ios mb-3">
+          <div className="card-glass mb-3">
             <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>
               Topics
             </label>
@@ -167,7 +167,7 @@ export default function CreateInterview() {
             )}
           </div>
 
-          <div className="card-ios mb-3">
+          <div className="card-glass mb-3">
             <div className="row g-3">
               <div className="col-md-6">
                 <label className="form-label fw-semibold" style={{ fontSize: '0.85rem' }}>

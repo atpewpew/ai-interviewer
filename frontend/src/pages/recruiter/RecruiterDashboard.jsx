@@ -40,10 +40,10 @@ export default function RecruiterDashboard() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f8fc' }}>
+    <div className="page-container">
       <Navbar />
 
-      <div className="container py-4">
+      <div className="container py-4 page-content">
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
@@ -51,7 +51,7 @@ export default function RecruiterDashboard() {
               style={{
                 fontFamily: 'var(--font-heading)',
                 fontSize: '2.2rem',
-                color: 'var(--graphite-black)',
+                color: 'var(--text-primary)',
               }}
             >
               DASHBOARD
@@ -69,7 +69,7 @@ export default function RecruiterDashboard() {
         {/* Stats */}
         <div className="row g-3 mb-4">
           <div className="col-md-4">
-            <div className="card-ios d-flex align-items-center gap-3">
+            <div className="card-glass d-flex align-items-center gap-3">
               <div
                 className="d-flex align-items-center justify-content-center"
                 style={{
@@ -95,9 +95,9 @@ export default function RecruiterDashboard() {
         {loading ? (
           <LoadingSpinner />
         ) : interviews.length === 0 ? (
-          <div className="card-ios text-center py-5">
-            <Briefcase size={48} color="var(--light-gray)" className="mb-3" />
-            <h4 style={{ fontFamily: 'var(--font-heading)', color: 'var(--graphite-black)' }}>
+          <div className="card-glass text-center py-5">
+            <Briefcase size={48} color="var(--text-muted)" className="mb-3" />
+            <h4 style={{ fontFamily: 'var(--font-heading)', color: 'var(--text-primary)' }}>
               NO INTERVIEWS YET
             </h4>
             <p style={{ color: 'var(--text-muted)' }}>
@@ -111,14 +111,14 @@ export default function RecruiterDashboard() {
           <div className="row g-3">
             {interviews.map((interview) => (
               <div key={interview.id} className="col-md-6 col-lg-4">
-                <div className="card-ios h-100">
+                <div className="card-glass h-100">
                   <div className="d-flex justify-content-between align-items-start mb-3">
                     <div>
                       <h5
                         style={{
                           fontFamily: 'var(--font-heading)',
                           fontSize: '1.3rem',
-                          color: 'var(--graphite-black)',
+                          color: 'var(--text-primary)',
                           margin: 0,
                         }}
                       >
@@ -147,8 +147,8 @@ export default function RecruiterDashboard() {
                   <div className="d-flex justify-content-between align-items-center mb-3" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     <span>{interview.total_questions} questions</span>
                     <span className="chip" style={{
-                      background: interview.difficulty === 'hard' ? '#ffe0e0' : interview.difficulty === 'medium' ? '#fff3e0' : '#e0ffe0',
-                      color: interview.difficulty === 'hard' ? '#c62828' : interview.difficulty === 'medium' ? '#e65100' : '#2e7d32',
+                      background: interview.difficulty === 'hard' ? 'var(--error-bg)' : interview.difficulty === 'medium' ? 'var(--warn-bg)' : 'var(--success-bg)',
+                      color: interview.difficulty === 'hard' ? 'var(--error)' : interview.difficulty === 'medium' ? 'var(--warn)' : 'var(--success)',
                     }}>
                       {interview.difficulty}
                     </span>

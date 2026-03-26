@@ -5,7 +5,7 @@ export default function TranscriptPanel({ transcript, interimTranscript }) {
     return (
       <div
         className="p-3 rounded text-center"
-        style={{ background: '#fafafa', minHeight: 80 }}
+        style={{ background: 'var(--bg-elevated)', minHeight: 80 }}
       >
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
           Your response will appear here...
@@ -18,7 +18,7 @@ export default function TranscriptPanel({ transcript, interimTranscript }) {
     <div
       className="p-3 rounded"
       style={{
-        background: '#fafafa',
+        background: 'var(--bg-elevated)',
         minHeight: 80,
         maxHeight: 200,
         overflowY: 'auto',
@@ -27,7 +27,7 @@ export default function TranscriptPanel({ transcript, interimTranscript }) {
       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>
         YOUR RESPONSE
       </div>
-      <p style={{ fontSize: '0.9rem', lineHeight: 1.6, margin: 0, color: 'var(--graphite-black)' }}>
+      <p style={{ fontSize: '0.9rem', lineHeight: 1.6, margin: 0, color: 'var(--text-primary)' }}>
         {transcript}
         {interimTranscript && (
           <span style={{ color: 'var(--lavender)' }}> {interimTranscript}</span>

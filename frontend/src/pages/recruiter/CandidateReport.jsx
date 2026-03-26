@@ -44,10 +44,10 @@ export default function CandidateReport() {
   if (loading) return <><Navbar /><LoadingSpinner text="Loading report..." /></>;
 
   const recColor = report?.recommendation === 'Hire'
-    ? '#2e7d32'
+    ? 'var(--success)'
     : report?.recommendation === 'Reject'
-    ? '#c62828'
-    : '#e65100';
+    ? 'var(--error)'
+    : 'var(--warn)';
 
   const RecIcon = report?.recommendation === 'Hire'
     ? CheckCircle
@@ -56,9 +56,9 @@ export default function CandidateReport() {
     : AlertTriangle;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f8fc' }}>
+    <div className="page-container">
       <Navbar />
-      <div className="container py-4" style={{ maxWidth: 900 }}>
+      <div className="container py-4 page-content" style={{ maxWidth: 900 }}>
         <Link
           to={-1}
           className="d-flex align-items-center gap-1 mb-3"
@@ -68,18 +68,18 @@ export default function CandidateReport() {
         </Link>
 
         {error ? (
-          <div className="card-ios text-center py-5">
-            <AlertTriangle size={48} color="var(--light-gray)" className="mb-3" />
+          <div className="card-glass text-center py-5">
+            <AlertTriangle size={48} color="var(--text-muted)" className="mb-3" />
             <h4 style={{ fontFamily: 'var(--font-heading)' }}>REPORT PENDING</h4>
             <p style={{ color: 'var(--text-muted)' }}>{error}</p>
           </div>
         ) : report && (
           <>
             {/* Header */}
-            <div className="card-ios mb-4">
+            <div className="card-glass mb-4">
               <div className="d-flex justify-content-between align-items-start">
                 <div>
-                  <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--graphite-black)' }}>
+                  <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--text-primary)' }}>
                     {candidate?.name}
                   </h1>
                   <p style={{ color: 'var(--text-muted)', margin: 0 }}>{candidate?.email}</p>
@@ -108,7 +108,7 @@ export default function CandidateReport() {
             {/* Radar Chart & Proctoring */}
             <div className="row g-3 mb-4">
               <div className="col-md-6">
-                <div className="card-ios h-100">
+                <div className="card-glass h-100">
                   <h5 style={{ fontFamily: 'var(--font-heading)', marginBottom: '1rem' }}>
                     DIMENSION SCORES
                   </h5>
@@ -116,7 +116,7 @@ export default function CandidateReport() {
                 </div>
               </div>
               <div className="col-md-6">
-                <div className="card-ios h-100">
+                <div className="card-glass h-100">
                   <div className="d-flex align-items-center gap-2 mb-3">
                     <Shield size={18} color="var(--primary-purple)" />
                     <h5 style={{ fontFamily: 'var(--font-heading)', margin: 0 }}>
@@ -131,27 +131,27 @@ export default function CandidateReport() {
             {/* Strengths & Red Flags */}
             <div className="row g-3 mb-4">
               <div className="col-md-6">
-                <div className="card-ios h-100">
+                <div className="card-glass h-100">
                   <h5 style={{ fontFamily: 'var(--font-heading)', marginBottom: '0.75rem' }}>
-                    <Star size={16} color="#2e7d32" className="me-1" /> STRENGTHS
+                    <Star size={16} color="var(--success)" className="me-1" /> STRENGTHS
                   </h5>
                   <ul style={{ paddingLeft: '1.2rem', margin: 0 }}>
                     {report.strengths.map((s, i) => (
-                      <li key={i} style={{ fontSize: '0.9rem', marginBottom: '0.3rem', color: '#2e7d32' }}>{s}</li>
+                      <li key={i} style={{ fontSize: '0.9rem', marginBottom: '0.3rem', color: 'var(--success)' }}>{s}</li>
                     ))}
                   </ul>
                 </div>
               </div>
               <div className="col-md-6">
-                <div className="card-ios h-100">
+                <div className="card-glass h-100">
                   <h5 style={{ fontFamily: 'var(--font-heading)', marginBottom: '0.75rem' }}>
-                    <AlertTriangle size={16} color="#c62828" className="me-1" /> RED FLAGS
+                    <AlertTriangle size={16} color="var(--error)" className="me-1" /> RED FLAGS
                   </h5>
                   <ul style={{ paddingLeft: '1.2rem', margin: 0 }}>
                     {report.red_flags.length === 0 ? (
                       <li style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>None detected</li>
                     ) : report.red_flags.map((f, i) => (
-                      <li key={i} style={{ fontSize: '0.9rem', marginBottom: '0.3rem', color: '#c62828' }}>{f}</li>
+                      <li key={i} style={{ fontSize: '0.9rem', marginBottom: '0.3rem', color: 'var(--error)' }}>{f}</li>
                     ))}
                   </ul>
                 </div>
@@ -159,15 +159,15 @@ export default function CandidateReport() {
             </div>
 
             {/* Summary */}
-            <div className="card-ios mb-4">
+            <div className="card-glass mb-4">
               <h5 style={{ fontFamily: 'var(--font-heading)', marginBottom: '0.75rem' }}>SUMMARY</h5>
-              <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--graphite-black)' }}>
+              <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-primary)' }}>
                 {report.full_summary}
               </p>
             </div>
 
             {/* Q&A Log */}
-            <div className="card-ios">
+            <div className="card-glass">
               <h5 style={{ fontFamily: 'var(--font-heading)', marginBottom: '1rem' }}>
                 INTERVIEW LOG ({messages.length} questions)
               </h5>
@@ -175,7 +175,7 @@ export default function CandidateReport() {
                 <div
                   key={m.id}
                   className="mb-3 p-3 rounded"
-                  style={{ background: i % 2 === 0 ? '#fafafa' : 'white', border: '1px solid var(--border-color)' }}
+                  style={{ background: i % 2 === 0 ? 'var(--bg-elevated)' : 'transparent', border: '1px solid var(--border-color)' }}
                 >
                   <div className="d-flex justify-content-between align-items-center mb-1">
                     <span className="chip">{m.topic}</span>
@@ -186,7 +186,7 @@ export default function CandidateReport() {
                   <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.3rem' }}>
                     Q: {m.question}
                   </p>
-                  <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '0.3rem' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
                     A: {m.answer_transcript}
                   </p>
                   <div className="d-flex gap-3" style={{ fontSize: '0.8rem' }}>

@@ -5,7 +5,7 @@ export default function CandidateCard({ candidate }) {
   const isCompleted = candidate.status === 'completed';
 
   return (
-    <div className="card-ios h-100">
+    <div className="card-glass h-100">
       <div className="d-flex align-items-center gap-3 mb-3">
         <div
           style={{
@@ -29,11 +29,11 @@ export default function CandidateCard({ candidate }) {
 
       <div className="d-flex align-items-center gap-2 mb-3">
         {isCompleted ? (
-          <span className="chip d-flex align-items-center gap-1" style={{ background: '#e0ffe0', color: '#2e7d32' }}>
+          <span className="chip d-flex align-items-center gap-1" style={{ background: 'var(--success-bg)', color: 'var(--success)' }}>
             <CheckCircle size={12} /> Completed
           </span>
         ) : (
-          <span className="chip d-flex align-items-center gap-1" style={{ background: '#fff3e0', color: '#e65100' }}>
+          <span className="chip d-flex align-items-center gap-1" style={{ background: 'var(--warn-bg)', color: 'var(--warn)' }}>
             <Clock size={12} /> Pending
           </span>
         )}

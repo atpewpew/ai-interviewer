@@ -12,44 +12,20 @@ export default function Navbar() {
   };
 
   return (
-    <nav
-      className="d-flex align-items-center justify-content-between px-4 py-3"
-      style={{
-        background: 'var(--white)',
-        borderBottom: '1px solid var(--border-color)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-      }}
-    >
-      <Link
-        to="/"
-        className="d-flex align-items-center gap-2 text-decoration-none"
-      >
+    <nav className="navbar-dark d-flex align-items-center justify-content-between px-4 py-3">
+      <Link to="/" className="d-flex align-items-center gap-2 text-decoration-none">
         <div
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: 'var(--radius-sm)',
+            width: 32, height: 32, borderRadius: 'var(--radius-sm)',
             background: 'var(--gradient)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontFamily: 'var(--font-heading)',
-            fontSize: '1.1rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', fontFamily: 'var(--font-heading)', fontSize: '1rem',
           }}
-        >
-          IO
-        </div>
-        <span
-          style={{
-            fontFamily: 'var(--font-heading)',
-            fontSize: '1.4rem',
-            color: 'var(--graphite-black)',
-            letterSpacing: '1.5px',
-          }}
-        >
+        >IO</div>
+        <span style={{
+          fontFamily: 'var(--font-heading)', fontSize: '1.3rem',
+          color: 'var(--text-primary)', letterSpacing: '2px',
+        }}>
           INTERVIEWOS
         </span>
       </Link>
@@ -57,24 +33,20 @@ export default function Navbar() {
       {user && (
         <div className="d-flex align-items-center gap-3">
           {user.role === 'recruiter' && (
-            <Link
-              to="/recruiter/dashboard"
-              className="btn btn-sm btn-outline-purple d-flex align-items-center gap-1"
-            >
-              <LayoutDashboard size={16} />
-              Dashboard
+            <Link to="/recruiter/dashboard" className="btn-outline-purple" style={{ padding: '0.4rem 1rem', fontSize: '0.82rem' }}>
+              <LayoutDashboard size={14} /> Dashboard
             </Link>
           )}
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
             {user.name}
           </span>
           <button
             onClick={handleLogout}
-            className="btn btn-sm"
-            style={{ color: 'var(--text-muted)' }}
+            className="btn-ghost"
+            style={{ padding: '0.4rem' }}
             title="Logout"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
           </button>
         </div>
       )}

@@ -19,7 +19,7 @@ export default function ScoreLiveFeed({ scores }) {
 
 function ScoreBar({ label, value, max }) {
   const pct = (value / max) * 100;
-  const color = pct >= 70 ? '#2e7d32' : pct >= 50 ? '#e65100' : '#c62828';
+  const color = pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warn)' : 'var(--error)';
 
   return (
     <div style={{ flex: 1 }}>

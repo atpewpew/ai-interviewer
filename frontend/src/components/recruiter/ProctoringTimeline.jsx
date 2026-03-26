@@ -9,17 +9,17 @@ const FLAG_ICONS = {
 };
 
 const SEVERITY_COLORS = {
-  low: '#e65100',
-  medium: '#c62828',
-  high: '#b71c1c',
+  low: 'var(--warn)',
+  medium: 'var(--error)',
+  high: '#ff4444',
 };
 
 export default function ProctoringTimeline({ flags = [], score }) {
   if (flags.length === 0) {
     return (
       <div className="text-center py-3">
-        <Shield size={32} color="#2e7d32" className="mb-2" />
-        <p style={{ color: '#2e7d32', fontWeight: 600, fontSize: '0.9rem' }}>
+        <Shield size={32} color="var(--success)" className="mb-2" />
+        <p style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.9rem' }}>
           Clean session — no flags detected
         </p>
         <div
@@ -60,7 +60,7 @@ export default function ProctoringTimeline({ flags = [], score }) {
                 className="chip"
                 style={{
                   background:
-                    flag.severity === 'high' ? '#ffe0e0' : flag.severity === 'medium' ? '#fff3e0' : '#fff8e1',
+                    flag.severity === 'high' ? 'var(--error-bg)' : flag.severity === 'medium' ? 'var(--warn-bg)' : 'rgba(251,191,36,0.06)',
                   color: SEVERITY_COLORS[flag.severity],
                   fontSize: '0.7rem',
                 }}

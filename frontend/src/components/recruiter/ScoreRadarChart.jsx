@@ -42,14 +42,15 @@ export default function ScoreRadarChart({ scores }) {
         ticks: {
           stepSize: 20,
           font: { family: 'Montserrat', size: 10 },
-          color: '#999',
+          color: '#6b6b80',
+          backdropColor: 'transparent',
         },
         pointLabels: {
           font: { family: 'Montserrat', size: 12, weight: '600' },
-          color: '#2C2C2C',
+          color: '#a0a0b0',
         },
-        grid: { color: '#EBEBEB' },
-        angleLines: { color: '#EBEBEB' },
+        grid: { color: 'rgba(255,255,255,0.06)' },
+        angleLines: { color: 'rgba(255,255,255,0.06)' },
       },
     },
   };

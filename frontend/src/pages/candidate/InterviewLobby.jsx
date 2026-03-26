@@ -52,13 +52,10 @@ export default function InterviewLobby() {
   };
 
   return (
-    <div
-      className="min-vh-100 d-flex align-items-center justify-content-center"
-      style={{ background: 'var(--neutral-dark)' }}
-    >
-      <div className="card-ios" style={{ width: '100%', maxWidth: 600, padding: '2.5rem' }}>
+    <div className="page-container min-vh-100 d-flex align-items-center justify-content-center">
+      <div className="card-glass fade-in" style={{ width: '100%', maxWidth: 600, padding: '2.5rem' }}>
         <div className="text-center mb-4">
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--graphite-black)' }}>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--text-primary)' }}>
             INTERVIEW LOBBY
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
@@ -87,7 +84,7 @@ export default function InterviewLobby() {
             />
           ) : (
             <div className="d-flex align-items-center justify-content-center h-100">
-              <p style={{ color: '#999', fontSize: '0.85rem' }}>Camera not available</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Camera not available</p>
             </div>
           )}
         </div>
@@ -138,7 +135,7 @@ function CheckItem({ ok, label, icon: Icon, loading }) {
           width: 28,
           height: 28,
           borderRadius: 'var(--radius-full)',
-          background: ok ? '#e0ffe0' : '#fff3e0',
+          background: ok ? 'var(--success-bg)' : 'var(--warn-bg)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -146,7 +143,7 @@ function CheckItem({ ok, label, icon: Icon, loading }) {
       >
         <Icon
           size={14}
-          color={ok ? '#2e7d32' : '#e65100'}
+          color={ok ? 'var(--success)' : 'var(--warn)'}
           className={loading ? 'spinner-border spinner-border-sm' : ''}
           style={loading ? { width: 14, height: 14, borderWidth: 2 } : {}}
         />

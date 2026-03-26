@@ -33,9 +33,9 @@ export default function CandidateList() {
   const candidateLink = `${window.location.origin}/interview/${interviewId}/join`;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f8fc' }}>
+    <div className="page-container">
       <Navbar />
-      <div className="container py-4">
+      <div className="container py-4 page-content">
         <Link
           to="/recruiter/dashboard"
           className="d-flex align-items-center gap-1 mb-3"
@@ -46,7 +46,7 @@ export default function CandidateList() {
 
         {interview && (
           <div className="mb-4">
-            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--graphite-black)' }}>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--text-primary)' }}>
               {interview.title}
             </h1>
             <p style={{ color: 'var(--text-muted)', margin: 0 }}>{interview.job_role}</p>
@@ -54,12 +54,12 @@ export default function CandidateList() {
         )}
 
         {/* Candidate invite link */}
-        <div className="card-ios d-flex align-items-center justify-content-between mb-4" style={{ background: 'var(--pale-purple)' }}>
+        <div className="card-glass d-flex align-items-center justify-content-between mb-4" style={{ background: 'rgba(115, 83, 246, 0.06)' }}>
           <div>
             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary-purple)' }}>
               Candidate Invite Link
             </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--graphite-black)' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               {candidateLink}
             </div>
           </div>
@@ -77,9 +77,9 @@ export default function CandidateList() {
         {loading ? (
           <LoadingSpinner />
         ) : candidates.length === 0 ? (
-          <div className="card-ios text-center py-5">
-            <Users size={48} color="var(--light-gray)" className="mb-3" />
-            <h4 style={{ fontFamily: 'var(--font-heading)', color: 'var(--graphite-black)' }}>
+          <div className="card-glass text-center py-5">
+            <Users size={48} color="var(--text-muted)" className="mb-3" />
+            <h4 style={{ fontFamily: 'var(--font-heading)', color: 'var(--text-primary)' }}>
               NO CANDIDATES YET
             </h4>
             <p style={{ color: 'var(--text-muted)' }}>

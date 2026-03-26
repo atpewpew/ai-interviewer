@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/shared/ProtectedRoute';
+import LandingPage from './pages/LandingPage';
 import RecruiterLogin from './pages/recruiter/RecruiterLogin';
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
 import CreateInterview from './pages/recruiter/CreateInterview';
@@ -18,6 +19,9 @@ function App() {
 
   return (
     <Routes>
+      {/* Landing */}
+      <Route path="/" element={user?.role === 'recruiter' ? <Navigate to="/recruiter/dashboard" replace /> : <LandingPage />} />
+
       {/* Auth */}
       <Route path="/login" element={<RecruiterLogin />} />
 
@@ -62,16 +66,6 @@ function App() {
       <Route path="/interview/complete" element={<InterviewComplete />} />
 
       {/* Default redirect */}
-      <Route
-        path="/"
-        element={
-          user?.role === 'recruiter' ? (
-            <Navigate to="/recruiter/dashboard" replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
