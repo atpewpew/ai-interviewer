@@ -36,6 +36,7 @@ def _format(r: dict) -> ReportResponse:
         strengths=r["strengths"],
         red_flags=r["red_flags"],
         proctoring_score=r["proctoring_score"],
+        proctoring_flags=r.get("proctoring_flags", []),
         full_summary=r["full_summary"],
         generated_at=r["generated_at"],
     )

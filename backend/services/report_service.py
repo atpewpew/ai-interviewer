@@ -37,11 +37,15 @@ async def generate_report(session_id: str):
                 "llm_feedback": t["llm_feedback"],
             })
 
+        proctoring_flags = session.get("proctoring_flags", [])
+        proctoring_score = session.get("proctoring_score", 100)
+
         report_data = await generate_report_data(
             job_role=interview["job_role"],
             job_description=interview["job_description"],
             all_turns=turns_data,
-            proctoring_flags=session.get("proctoring_flags", []),
+            proctoring_flags=proctoring_flags,
+            proctoring_score=proctoring_score,
         )
 
         if "error" in report_data:
@@ -57,7 +61,8 @@ async def generate_report(session_id: str):
             "recommendation": report_data.get("recommendation", "Hold"),
             "strengths": report_data.get("strengths", []),
             "red_flags": report_data.get("red_flags", []),
-            "proctoring_score": report_data.get("proctoring_score", 100),
+            "proctoring_score": proctoring_score,
+            "proctoring_flags": proctoring_flags,
             "full_summary": report_data.get("full_summary", ""),
             "generated_at": datetime.now(timezone.utc),
         }
