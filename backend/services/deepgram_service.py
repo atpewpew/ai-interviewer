@@ -90,8 +90,7 @@ class DeepgramTranscriber:
     async def _on_error(self, _self, error, **kwargs):
         logger.error("Deepgram error: %s", str(error))
         self._is_connected = False
-        self._transcript_ready.set()  # unblock any waiting wait_for_final_transcript
-
+        self._transcript_ready.set()
     async def _on_close(self, _self, close, **kwargs):
         self._is_connected = False
 

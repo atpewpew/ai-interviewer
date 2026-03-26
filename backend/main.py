@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import connect_db, close_db, FRONTEND_URL
-from routers import auth, interviews, candidates, sessions, reports, ws_interview
+from routers import auth, interviews, candidates, sessions, reports, ws_interview, tts
 
 app = FastAPI(title="InterviewOS API", version="1.0.0")
 
@@ -18,6 +18,7 @@ app.include_router(interviews.router, prefix="/interviews", tags=["Interviews"])
 app.include_router(candidates.router, prefix="/candidates", tags=["Candidates"])
 app.include_router(sessions.router, prefix="/sessions", tags=["Sessions"])
 app.include_router(reports.router, prefix="/reports", tags=["Reports"])
+app.include_router(tts.router, prefix="/tts", tags=["TTS"])
 app.include_router(ws_interview.router, tags=["WebSocket Interview"])
 
 
