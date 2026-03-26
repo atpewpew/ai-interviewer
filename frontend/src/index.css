@@ -1,0 +1,297 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Brand Colors */
+  --primary-purple: #7353F6;
+  --graphite-black: #2C2C2C;
+  --white: #FFFFFF;
+  --lavender: #A88BFF;
+  --pale-purple: #EBE4FF;
+  --sky-blue: #5CC9F5;
+  --neutral-dark: #231F20;
+  --light-gray: #EBEBEB;
+  --gradient: linear-gradient(135deg, #7353F6, #00C0FF);
+
+  /* Semantic Tokens */
+  --bg-primary: var(--white);
+  --bg-dark: var(--graphite-black);
+  --bg-sidebar: var(--neutral-dark);
+  --text-primary: var(--graphite-black);
+  --text-light: var(--white);
+  --text-muted: #6c757d;
+  --border-color: var(--light-gray);
+  --accent: var(--sky-blue);
+
+  /* Typography */
+  --font-heading: 'Bebas Neue', sans-serif;
+  --font-body: 'Montserrat', sans-serif;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 50%;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background-color: #f8f8fc;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  letter-spacing: 1px;
+}
+
+/* ── Utility Classes ── */
+.gradient-text {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: var(--gradient);
+}
+
+.card-ios {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-lg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-ios:hover {
+  box-shadow: 0 4px 20px rgba(115, 83, 246, 0.1);
+}
+
+/* ── Buttons ── */
+.btn-primary-ios {
+  background: var(--primary-purple);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 1.5rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary-ios:hover {
+  background: var(--lavender);
+  transform: translateY(-1px);
+}
+
+.btn-gradient {
+  background: var(--gradient);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 2rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-gradient:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-outline-purple {
+  background: transparent;
+  color: var(--primary-purple);
+  border: 2px solid var(--primary-purple);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 1.5rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-purple:hover {
+  background: var(--pale-purple);
+}
+
+/* ── Form Inputs ── */
+.form-control-ios {
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+
+.form-control-ios:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+  box-shadow: 0 0 0 3px rgba(115, 83, 246, 0.12);
+}
+
+/* ── Chips / Tags ── */
+.chip {
+  display: inline-block;
+  background: var(--pale-purple);
+  color: var(--primary-purple);
+  padding: 0.2rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ── Score Badge ── */
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-full);
+  background: var(--gradient);
+  color: var(--white);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* ── Animations ── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(115, 83, 246, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(115, 83, 246, 0.6); }
+}
+
+@keyframes waveform {
+  0%, 100% { height: 8px; }
+  50% { height: 24px; }
+}
+
+.ai-speaking-indicator {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ai-speaking-indicator .bar {
+  width: 4px;
+  background: var(--primary-purple);
+  border-radius: 2px;
+  animation: waveform 0.8s ease-in-out infinite;
+}
+
+.ai-speaking-indicator .bar:nth-child(2) { animation-delay: 0.1s; }
+.ai-speaking-indicator .bar:nth-child(3) { animation-delay: 0.2s; }
+.ai-speaking-indicator .bar:nth-child(4) { animation-delay: 0.3s; }
+.ai-speaking-indicator .bar:nth-child(5) { animation-delay: 0.15s; }
+
+/* ── Live recording indicator ── */
+@keyframes recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.recording-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: recording-pulse 1.2s ease-in-out infinite;
+}
+
+/* ── Score animation ── */
+@keyframes score-slide-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.score-entry {
+  animation: score-slide-in 0.4s ease-out;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--bg-sidebar);
+  min-height: 100vh;
+  padding: var(--spacing-lg);
+  color: var(--text-light);
+}
+
+.sidebar a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+  color: var(--white);
+  background: rgba(115, 83, 246, 0.2);
+}
+
+/* ── Interview Room ── */
+.interview-room {
+  display: grid;
+  grid-template-columns: 60% 40%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.video-section {
+  background: var(--neutral-dark);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.interview-panel {
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+}
+
+/* ── Progress Bar ── */
+.progress-bar-ios {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--light-gray);
+  overflow: hidden;
+}
+
+.progress-bar-ios .fill {
+  height: 100%;
+  background: var(--gradient);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
