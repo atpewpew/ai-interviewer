@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, LayoutDashboard } from 'lucide-react';
+import { LogOut, LayoutDashboard, Briefcase } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -33,9 +33,14 @@ export default function Navbar() {
       {user && (
         <div className="d-flex align-items-center gap-3">
           {user.role === 'recruiter' && (
-            <Link to="/recruiter/dashboard" className="btn-outline-purple" style={{ padding: '0.4rem 1rem', fontSize: '0.82rem' }}>
-              <LayoutDashboard size={14} /> Dashboard
-            </Link>
+            <>
+              <Link to="/recruiter/dashboard" className="btn-outline-purple d-flex align-items-center gap-1" style={{ padding: '0.4rem 1rem', fontSize: '0.82rem' }}>
+                <LayoutDashboard size={14} /> Dashboard
+              </Link>
+              <Link to="/recruiter/jobs" className="btn-outline-purple d-flex align-items-center gap-1" style={{ padding: '0.4rem 1rem', fontSize: '0.82rem' }}>
+                <Briefcase size={14} /> Jobs
+              </Link>
+            </>
           )}
           <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
             {user.name}

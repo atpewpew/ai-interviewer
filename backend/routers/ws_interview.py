@@ -10,6 +10,7 @@ from services.deepgram_service import DeepgramTranscriber
 from services.report_service import generate_report
 from services.proctoring_service import ProctoringAnalyzer
 from services.github_service import fetch_github_context
+from routers.applications import auto_advance_candidate
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -404,3 +405,29 @@ async def _finish_interview(session_id: str, proctor: ProctoringAnalyzer, state:
         {"$set": update_data},
     )
     asyncio.create_task(generate_report(session_id))
+
+    # Calculate overall interview score and update application round_results
+    if state and state.get("running_scores"):
+        all_scores = state["running_scores"]
+        avg_tech = sum(s["technical"] for s in all_scores) / len(all_scores)
+        avg_comm = sum(s["communication"] for s in all_scores) / len(all_scores)
+        avg_depth = sum(s["depth"] for s in all_scores) / len(all_scores)
+        overall_score = round(((avg_tech + avg_comm + avg_depth) / 3) * 10, 1)  # 0-100 scale
+
+        session = await db.sessions.find_one({"_id": ObjectId(session_id)})
+        app_id = session.get("application_id") if session else None
+        if app_id:
+            now = datetime.now(timezone.utc)
+            await db.applications.update_one(
+                {"_id": ObjectId(app_id), "round_results.session_id": session_id},
+                {"$set": {
+                    "round_results.$.status": "completed",
+                    "round_results.$.score": overall_score,
+                    "round_results.$.completed_at": now,
+                }},
+            )
+            # Auto-advance candidate to next round
+            try:
+                await auto_advance_candidate(app_id)
+            except Exception as e:
+                logger.error("Auto-advance failed for app %s: %s", app_id, e)

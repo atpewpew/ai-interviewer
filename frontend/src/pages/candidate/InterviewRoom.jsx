@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import { useInterview, InterviewProvider } from '../../context/InterviewContext';
 import { useMicrophone } from '../../hooks/useMicrophone';
@@ -11,8 +11,9 @@ import { Mic, MicOff, AlertCircle, Keyboard } from 'lucide-react';
 
 function InterviewRoomInner() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const webcamRef = useRef(null);
-  const sessionId = sessionStorage.getItem('sessionId');
+  const sessionId = sessionStorage.getItem('sessionId') || searchParams.get('sid');
 
   const {
     interviewState, setInterviewState,

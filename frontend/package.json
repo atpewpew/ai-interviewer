@@ -13,6 +13,7 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "axios": "^1.13.6",
     "bootstrap": "^5.3.8",
     "chart.js": "^4.5.1",
@@ -21,7 +22,10 @@
     "react": "^19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.13.2",
-    "react-webcam": "^7.2.0"
+    "react-syntax-highlighter": "^16.1.1",
+    "react-webcam": "^7.2.0",
+    "remark-gfm": "^4.0.1"
   }
 }

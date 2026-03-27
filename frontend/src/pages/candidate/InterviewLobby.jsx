@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import { Camera, Mic, CheckCircle, Loader, ArrowRight } from 'lucide-react';
 
 export default function InterviewLobby() {
   const { interviewId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const webcamRef = useRef(null);
   const [cameraOk, setCameraOk] = useState(false);
   const [micOk, setMicOk] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [ready, setReady] = useState(false);
+
+  // Support ATS flow: read sessionId from URL query param (?sid=xxx) as fallback
+  useEffect(() => {
+    const urlSid = searchParams.get('sid');
+    if (urlSid && !sessionStorage.getItem('sessionId')) {
+      sessionStorage.setItem('sessionId', urlSid);
+    }
+  }, [searchParams]);
 
   // Check camera
   useEffect(() => {
@@ -40,8 +49,8 @@ export default function InterviewLobby() {
     return () => clearTimeout(timer);
   }, []);
 
-  const sessionId = sessionStorage.getItem('sessionId');
-  const candidateName = sessionStorage.getItem('candidateName');
+  const sessionId = sessionStorage.getItem('sessionId') || searchParams.get('sid');
+  const candidateName = sessionStorage.getItem('candidateName') || 'Candidate';
 
   const startInterview = () => {
     if (!sessionId) {

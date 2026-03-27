@@ -7,10 +7,18 @@ import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
 import CreateInterview from './pages/recruiter/CreateInterview';
 import CandidateList from './pages/recruiter/CandidateList';
 import CandidateReport from './pages/recruiter/CandidateReport';
+import JobList from './pages/recruiter/JobList';
+import CreateJob from './pages/recruiter/CreateJob';
+import JobPipeline from './pages/recruiter/JobPipeline';
+import LiveRoom from './pages/recruiter/LiveRoom';
+import Scorecard from './pages/recruiter/Scorecard';
 import CandidateEntry from './pages/candidate/CandidateEntry';
 import InterviewLobby from './pages/candidate/InterviewLobby';
 import InterviewRoom from './pages/candidate/InterviewRoom';
 import InterviewComplete from './pages/candidate/InterviewComplete';
+import JobApplication from './pages/candidate/JobApplication';
+import DSATest from './pages/candidate/DSATest';
+import LiveRoomCandidate from './pages/candidate/LiveRoomCandidate';
 
 function App() {
   const { user, loading } = useAuth();
@@ -55,6 +63,61 @@ function App() {
         element={
           <ProtectedRoute role="recruiter">
             <CandidateReport />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ATS — Job Pipeline routes */}
+      <Route
+        path="/recruiter/jobs"
+        element={
+          <ProtectedRoute role="recruiter">
+            <JobList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recruiter/jobs/create"
+        element={
+          <ProtectedRoute role="recruiter">
+            <CreateJob />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recruiter/jobs/:jobId/pipeline"
+        element={
+          <ProtectedRoute role="recruiter">
+            <JobPipeline />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Public — Job Application (no auth) */}
+      <Route path="/jobs/:jobId/apply" element={<JobApplication />} />
+
+      {/* DSA Test (candidate, no auth — link is credential) */}
+      <Route path="/dsa/:sessionId" element={<DSATest />} />
+
+      {/* Live Room — candidate view (no auth) */}
+      <Route path="/live-room/:roomId/candidate" element={<LiveRoomCandidate />} />
+
+      {/* Live Room — HR view (auth required) */}
+      <Route
+        path="/recruiter/live-room/:roomId"
+        element={
+          <ProtectedRoute role="recruiter">
+            <LiveRoom />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Scorecard — aggregated view (auth required) */}
+      <Route
+        path="/recruiter/scorecard/:appId"
+        element={
+          <ProtectedRoute role="recruiter">
+            <Scorecard />
           </ProtectedRoute>
         }
       />

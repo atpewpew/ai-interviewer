@@ -92,6 +92,24 @@ async def generate_report(session_id: str):
             {"$set": {"status": "completed"}},
         )
 
+        # If this session is linked to a job application, update round_results
+        application_id = session.get("application_id")
+        if application_id:
+            overall = report_data.get("overall_score", 0)
+            report_id = str(report_doc.get("_id", ""))
+            await db.applications.update_one(
+                {
+                    "_id": ObjectId(application_id),
+                    "round_results.session_id": session_id,
+                },
+                {"$set": {
+                    "round_results.$.status": "completed",
+                    "round_results.$.score": overall,
+                    "round_results.$.report_id": report_id,
+                    "round_results.$.completed_at": datetime.now(timezone.utc),
+                }},
+            )
+
         logger.info("Report generated for session %s", session_id)
 
     except Exception as e:
