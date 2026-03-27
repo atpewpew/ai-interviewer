@@ -6,16 +6,16 @@ const InterviewContext = createContext(null);
 export function InterviewProvider({ children }) {
   const wsRef = useRef(null);
   const [sessionId, setSessionId] = useState(null);
-  const [interviewState, setInterviewState] = useState('IDLE'); // IDLE, AI_SPEAKING, LISTENING, PROCESSING, SCORING, COMPLETED
+  const [interviewState, setInterviewState] = useState('IDLE'); // IDLE, AI_SPEAKING, LISTENING, PROCESSING, COMPLETED
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [currentTopic, setCurrentTopic] = useState('');
   const [turnNumber, setTurnNumber] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
-  const [turnScores, setTurnScores] = useState([]);
   const [feedback, setFeedback] = useState('');
   const [isComplete, setIsComplete] = useState(false);
+  const [proctoringRisk, setProctoringRisk] = useState({ score: 0, message: 'Monitoring...' });
 
   const connectWS = useCallback((sid) => {
     // Close any existing connection first (handles React StrictMode double-mount)
@@ -55,31 +55,25 @@ export function InterviewProvider({ children }) {
 
         case 'result':
           setTranscript(data.transcript);
-          if (data.scores) {
-            setTurnScores((prev) => [...prev, {
-              turn: data.turn_number || turnNumber,
-              ...data.scores,
-              feedback: data.feedback,
-            }]);
-          }
           setFeedback(data.feedback || '');
 
           if (data.is_complete) {
             setIsComplete(true);
             setInterviewState('COMPLETED');
           } else {
-            setInterviewState('SCORING');
-            // After showing score, set next question
-            setTimeout(() => {
-              setCurrentQuestion(data.next_question || '');
-              setCurrentTopic(data.topic || '');
-              setTurnNumber(data.turn_number);
-              setTotalQuestions(data.total_questions);
-              setTranscript('');
-              setInterimTranscript('');
-              setInterviewState('AI_SPEAKING');
-            }, 2500);
+            // Go directly to next question (no score display for candidate)
+            setCurrentQuestion(data.next_question || '');
+            setCurrentTopic(data.topic || '');
+            setTurnNumber(data.turn_number);
+            setTotalQuestions(data.total_questions);
+            setTranscript('');
+            setInterimTranscript('');
+            setInterviewState('AI_SPEAKING');
           }
+          break;
+
+        case 'proctor_update':
+          setProctoringRisk({ score: data.risk_score, message: data.message });
           break;
 
         case 'error':
@@ -100,7 +94,7 @@ export function InterviewProvider({ children }) {
     ws.onclose = () => console.log('WS closed');
 
     return ws;
-  }, [turnNumber]);
+  }, []);
 
   const sendAudio = useCallback((audioData) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -111,6 +105,12 @@ export function InterviewProvider({ children }) {
   const sendCommand = useCallback((command) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ command }));
+    }
+  }, []);
+
+  const sendJSON = useCallback((data) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(data));
     }
   }, []);
 
@@ -125,8 +125,9 @@ export function InterviewProvider({ children }) {
     <InterviewContext.Provider value={{
       wsRef, sessionId, interviewState, setInterviewState,
       currentQuestion, currentTopic, turnNumber, totalQuestions,
-      transcript, interimTranscript, turnScores, feedback, isComplete,
-      connectWS, sendAudio, sendCommand, disconnectWS,
+      transcript, interimTranscript, feedback, isComplete,
+      proctoringRisk,
+      connectWS, sendAudio, sendCommand, sendJSON, disconnectWS,
     }}>
       {children}
     </InterviewContext.Provider>

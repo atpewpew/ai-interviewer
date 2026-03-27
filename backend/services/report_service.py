@@ -26,8 +26,9 @@ async def generate_report(session_id: str):
         all_turns = await cursor.to_list(100)
 
         turns_data = []
+        per_question_proctoring = []
         for t in all_turns:
-            turns_data.append({
+            turn_entry = {
                 "turn_number": t["turn_number"],
                 "question": t["question"],
                 "topic": t["topic"],
@@ -35,10 +36,22 @@ async def generate_report(session_id: str):
                 "answer_transcript": t["answer_transcript"],
                 "scores": t["scores"],
                 "llm_feedback": t["llm_feedback"],
+                "justifications": t.get("justifications"),
+                "contradiction_note": t.get("contradiction_note", ""),
+            }
+            turns_data.append(turn_entry)
+
+            # Collect per-question proctoring snapshots
+            snapshot = t.get("proctoring_snapshot")
+            per_question_proctoring.append({
+                "turn_number": t["turn_number"],
+                "topic": t["topic"],
+                "proctoring_score": snapshot if snapshot is not None else 100.0,
             })
 
         proctoring_flags = session.get("proctoring_flags", [])
         proctoring_score = session.get("proctoring_score", 100)
+        speech_metrics_summary = session.get("speech_metrics_summary")
 
         report_data = await generate_report_data(
             job_role=interview["job_role"],
@@ -46,6 +59,8 @@ async def generate_report(session_id: str):
             all_turns=turns_data,
             proctoring_flags=proctoring_flags,
             proctoring_score=proctoring_score,
+            per_question_proctoring=per_question_proctoring,
+            speech_metrics_summary=speech_metrics_summary,
         )
 
         if "error" in report_data:
@@ -58,11 +73,14 @@ async def generate_report(session_id: str):
             "interview_id": session["interview_id"],
             "overall_score": report_data.get("overall_score", 0),
             "dimension_scores": report_data.get("dimension_scores", {}),
+            "dimension_justifications": report_data.get("dimension_justifications", {}),
             "recommendation": report_data.get("recommendation", "Hold"),
             "strengths": report_data.get("strengths", []),
             "red_flags": report_data.get("red_flags", []),
             "proctoring_score": proctoring_score,
             "proctoring_flags": proctoring_flags,
+            "per_question_proctoring": per_question_proctoring,
+            "speech_metrics_summary": speech_metrics_summary,
             "full_summary": report_data.get("full_summary", ""),
             "generated_at": datetime.now(timezone.utc),
         }

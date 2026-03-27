@@ -24,6 +24,7 @@ export const createInterview = (data) => api.post('/interviews/', data);
 export const getInterviews = () => api.get('/interviews/');
 export const getInterview = (id) => api.get(`/interviews/${id}`);
 export const deleteInterview = (id) => api.delete(`/interviews/${id}`);
+export const getDashboardStats = () => api.get('/interviews/stats');
 
 // Candidates
 export const registerCandidate = (formData) =>

@@ -1,21 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getInterviews, deleteInterview } from '../../api';
+import { getInterviews, deleteInterview, getDashboardStats } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/shared/Navbar';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import {
   PlusCircle, Briefcase, Trash2, Users, ClipboardList, ChevronRight,
+  CheckCircle, BarChart3,
 } from 'lucide-react';
 
 export default function RecruiterDashboard() {
   const [interviews, setInterviews] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchInterviews();
+    fetchStats();
   }, []);
 
   const fetchInterviews = async () => {
@@ -26,6 +29,15 @@ export default function RecruiterDashboard() {
       console.error('Failed to load interviews:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const { data } = await getDashboardStats();
+      setStats(data);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
     }
   };
 
@@ -68,7 +80,7 @@ export default function RecruiterDashboard() {
 
         {/* Stats */}
         <div className="row g-3 mb-4">
-          <div className="col-md-4">
+          <div className="col-md-3 col-6">
             <div className="card-glass d-flex align-items-center gap-3">
               <div
                 className="d-flex align-items-center justify-content-center"
@@ -83,9 +95,72 @@ export default function RecruiterDashboard() {
               </div>
               <div>
                 <div style={{ fontSize: '1.6rem', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>
-                  {interviews.length}
+                  {stats?.total_interviews ?? interviews.length}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Total Interviews</div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 col-6">
+            <div className="card-glass d-flex align-items-center gap-3">
+              <div
+                className="d-flex align-items-center justify-content-center"
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 'var(--radius-md)',
+                  background: 'rgba(59,130,246,0.1)',
+                }}
+              >
+                <Users size={22} color="#3b82f6" />
+              </div>
+              <div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>
+                  {stats?.total_candidates ?? '—'}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Total Candidates</div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 col-6">
+            <div className="card-glass d-flex align-items-center gap-3">
+              <div
+                className="d-flex align-items-center justify-content-center"
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 'var(--radius-md)',
+                  background: 'rgba(16,185,129,0.1)',
+                }}
+              >
+                <CheckCircle size={22} color="#10b981" />
+              </div>
+              <div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>
+                  {stats?.completed_sessions ?? '—'}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Completed</div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-3 col-6">
+            <div className="card-glass d-flex align-items-center gap-3">
+              <div
+                className="d-flex align-items-center justify-content-center"
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 'var(--radius-md)',
+                  background: 'rgba(245,158,11,0.1)',
+                }}
+              >
+                <BarChart3 size={22} color="#f59e0b" />
+              </div>
+              <div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>
+                  {stats?.avg_score != null ? stats.avg_score : '—'}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Avg Score</div>
               </div>
             </div>
           </div>

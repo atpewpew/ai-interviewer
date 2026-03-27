@@ -1,92 +1,36 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { submitProctoringFlag } from '../api';
+import { useCallback, useEffect, useRef } from 'react';
 
-export function useProctoring(sessionId, videoRef) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [flags, setFlags] = useState([]);
+/**
+ * Server-side proctoring via MediaPipe.
+ * Captures webcam frames at ~1 FPS and sends them to the backend
+ * through the interview WebSocket. Also sends tab/window events.
+ *
+ * @param {Function} sendJSON - sends JSON over the interview WS
+ * @param {React.RefObject} videoRef - ref to the Webcam component
+ */
+export function useProctoring(sendJSON, videoRef) {
   const intervalRef = useRef(null);
-  const noFaceCountRef = useRef(0);
-  const faceApiRef = useRef(null);
 
-  // Load face-api.js models
-  const loadModels = useCallback(async () => {
-    try {
-      const faceapi = await import('face-api.js');
-      faceApiRef.current = faceapi;
+  const captureFrame = useCallback(() => {
+    // react-webcam exposes .video on the ref
+    const video = videoRef?.current?.video || videoRef?.current;
+    if (!video || video.readyState < 2) return;
 
-      const MODEL_URL = '/models';
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
-      ]);
-      setIsLoaded(true);
-    } catch (err) {
-      console.error('Failed to load face-api models:', err);
-      // Still allow interview to proceed without proctoring
-      setIsLoaded(true);
-    }
-  }, []);
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, 320, 240);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+    const base64 = dataUrl.split(',')[1];
 
-  // Submit a flag
-  const addFlag = useCallback(async (type, severity) => {
-    const flag = {
-      type,
-      timestamp: new Date().toISOString(),
-      severity,
-    };
-    setFlags((prev) => [...prev, flag]);
-    if (sessionId) {
-      try {
-        await submitProctoringFlag(sessionId, flag);
-      } catch (err) {
-        console.error('Failed to submit proctoring flag:', err);
-      }
-    }
-  }, [sessionId]);
+    sendJSON({ event: 'frame', image: base64, frame_interval: 1000 });
+  }, [sendJSON, videoRef]);
 
-  // Start detection loop
   const startDetection = useCallback(() => {
-    if (!faceApiRef.current || !videoRef?.current) return;
-    const faceapi = faceApiRef.current;
-
-    intervalRef.current = setInterval(async () => {
-      const video = videoRef.current;
-      if (!video || video.readyState < 2) return;
-
-      try {
-        const detections = await faceapi
-          .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-          .withFaceLandmarks(true);
-
-        if (detections.length === 0) {
-          noFaceCountRef.current++;
-          if (noFaceCountRef.current >= 2) { // 3+ seconds (every 2s check)
-            addFlag('NO_FACE', 'high');
-            noFaceCountRef.current = 0;
-          }
-        } else {
-          noFaceCountRef.current = 0;
-
-          if (detections.length > 1) {
-            addFlag('MULTIPLE_FACES', 'high');
-          }
-
-          // Basic gaze check using nose position relative to face box
-          const face = detections[0];
-          const nose = face.landmarks.getNose();
-          const box = face.detection.box;
-          const noseTip = nose[3]; // tip of nose
-          const centerX = box.x + box.width / 2;
-          const deviation = Math.abs(noseTip.x - centerX) / box.width;
-          if (deviation > 0.25) {
-            addFlag('LOOKING_AWAY', 'medium');
-          }
-        }
-      } catch {
-        // Detection can fail occasionally, just skip
-      }
-    }, 2000);
-  }, [videoRef, addFlag]);
+    if (intervalRef.current) return;
+    intervalRef.current = setInterval(captureFrame, 1000);
+  }, [captureFrame]);
 
   const stopDetection = useCallback(() => {
     if (intervalRef.current) {
@@ -95,30 +39,27 @@ export function useProctoring(sessionId, videoRef) {
     }
   }, []);
 
-  // Tab switch / window blur detection
+  // Tab switch / window blur events sent via WS
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.hidden) {
-        addFlag('TAB_SWITCH', 'high');
-      }
+      sendJSON({ event: document.hidden ? 'tab_switch' : 'tab_focus' });
     };
-    const handleBlur = () => {
-      addFlag('WINDOW_BLUR', 'medium');
-    };
+    const handleBlur = () => sendJSON({ event: 'window_blur' });
+    const handleFocus = () => sendJSON({ event: 'window_focus' });
 
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, [addFlag]);
+  }, [sendJSON]);
 
   return {
-    isLoaded,
-    flags,
-    loadModels,
+    isLoaded: true, // no client-side model loading needed
     startDetection,
     stopDetection,
   };

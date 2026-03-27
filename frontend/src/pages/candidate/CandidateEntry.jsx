@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { registerCandidate, getSessionByCandidate } from '../../api';
-import { Upload, ArrowRight } from 'lucide-react';
+import { Upload, ArrowRight, Code2 } from 'lucide-react';
 
 export default function CandidateEntry() {
   const { interviewId } = useParams();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [githubUsername, setGithubUsername] = useState('');
   const [resume, setResume] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,7 @@ export default function CandidateEntry() {
       formData.append('name', name);
       formData.append('email', email);
       formData.append('interview_id', interviewId);
+      formData.append('github_username', githubUsername);
       formData.append('resume', resume);
 
       const { data: candidate } = await registerCandidate(formData);
@@ -95,6 +97,18 @@ export default function CandidateEntry() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="your@email.com"
+            />
+          </div>
+
+          <div className="mb-3">
+            <label className="form-label fw-semibold d-flex align-items-center gap-1" style={{ fontSize: '0.85rem' }}>
+              <Code2 size={14} /> GitHub Username <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span>
+            </label>
+            <input
+              className="form-control-ios"
+              value={githubUsername}
+              onChange={(e) => setGithubUsername(e.target.value)}
+              placeholder="e.g. octocat"
             />
           </div>
 

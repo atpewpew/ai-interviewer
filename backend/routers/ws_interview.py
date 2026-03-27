@@ -9,6 +9,7 @@ from services.llm_service import generate_first_question, evaluate_and_next
 from services.deepgram_service import DeepgramTranscriber
 from services.report_service import generate_report
 from services.proctoring_service import ProctoringAnalyzer
+from services.github_service import fetch_github_context
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -49,6 +50,12 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
         {"_id": ObjectId(session["candidate_id"])}
     )
     resume_summary = candidate.get("resume_text", "") if candidate else ""
+    github_username = candidate.get("github_username", "") if candidate else ""
+
+    # Fetch GitHub context (non-blocking, returns empty string on failure)
+    github_context = ""
+    if github_username:
+        github_context = await fetch_github_context(github_username)
 
     # Initialize in-memory session state
     state = {
@@ -61,11 +68,13 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
         "difficulty": interview["difficulty"],
         "total_questions": interview["total_questions"],
         "resume_summary": resume_summary,
+        "github_context": github_context,
         "current_turn": 0,
         "current_question": "",
         "current_topic": "",
         "questions_asked": [],
         "running_scores": [],
+        "speech_metrics_all": [],  # per-turn speech metrics for report
     }
     active_sessions[session_id] = state
 
@@ -76,10 +85,8 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
     )
 
     # Deepgram is connected lazily per turn when the first audio byte arrives.
-    # This avoids Deepgram's idle-timeout (1011) that fires if Deepgram is opened
-    # before audio actually arrives (during LLM question generation + TTS playback).
     transcriber = None
-    dg_connect_tried = False  # prevents retry on every chunk if connect fails
+    dg_connect_tried = False
 
     # Server-side proctoring (MediaPipe)
     proctor = ProctoringAnalyzer()
@@ -92,6 +99,7 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
             topics=state["topics"],
             difficulty=state["difficulty"],
             resume_summary=state["resume_summary"],
+            github_context=state["github_context"],
         )
 
         if "error" in first_q:
@@ -112,7 +120,7 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
             "is_complete": False,
         })
 
-        # Main interview loop — receive audio, transcribe, evaluate
+        # Main interview loop
         collecting_audio = True
         while True:
             try:
@@ -124,7 +132,6 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
             # Handle binary audio data
             if "bytes" in message:
                 if collecting_audio:
-                    # Lazy-connect Deepgram on the first audio byte of each turn
                     if not dg_connect_tried:
                         dg_connect_tried = True
                         transcriber = DeepgramTranscriber()
@@ -136,7 +143,6 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
 
                     if transcriber and transcriber._is_connected:
                         await transcriber.send_audio(message["bytes"])
-                        # Send interim transcripts to frontend
                         interim = transcriber.get_interim()
                         if interim:
                             await websocket.send_json({
@@ -171,7 +177,6 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                     collecting_audio = False
                     text_answer = data.get("text", "").strip() or "(no response)"
 
-                    # Close any open Deepgram connection
                     if transcriber:
                         await transcriber.close()
                         transcriber = None
@@ -182,104 +187,29 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                     })
                     await websocket.send_json({"type": "processing"})
 
-                    eval_result = await evaluate_and_next(
-                        job_role=state["job_role"],
-                        job_description=state["job_description"],
-                        topics=state["topics"],
-                        difficulty=state["difficulty"],
-                        resume_summary=state["resume_summary"],
-                        current_question=state["current_question"],
-                        current_topic=state["current_topic"],
-                        answer_transcript=text_answer,
-                        questions_asked=state["questions_asked"],
-                        turn_number=state["current_turn"],
-                        total_questions=state["total_questions"],
+                    # No speech metrics for text input
+                    await _process_answer(
+                        websocket, state, proctor, text_answer, None, transcriber
                     )
-
-                    if "error" in eval_result:
-                        await websocket.send_json({"type": "error", "message": "Evaluation failed"})
-                        collecting_audio = True
-                        dg_connect_tried = False
-                        continue
-
-                    scores = {
-                        "technical": eval_result.get("technical_score", 5),
-                        "communication": eval_result.get("communication_score", 5),
-                        "depth": eval_result.get("depth_score", 5),
-                    }
-                    feedback = (
-                        f"Technical: {eval_result.get('technical_feedback', '')} | "
-                        f"Communication: {eval_result.get('communication_feedback', '')} | "
-                        f"Depth: {eval_result.get('depth_feedback', '')}"
-                    )
-
-                    turn_doc = {
-                        "session_id": session_id,
-                        "turn_number": state["current_turn"],
-                        "question": state["current_question"],
-                        "topic": state["current_topic"],
-                        "difficulty": state["difficulty"],
-                        "answer_transcript": text_answer,
-                        "scores": scores,
-                        "llm_feedback": feedback,
-                        "timestamp": datetime.now(timezone.utc),
-                    }
-                    await db.messages.insert_one(turn_doc)
-
-                    state["questions_asked"].append({
-                        "turn": state["current_turn"],
-                        "topic": state["current_topic"],
-                        "question": state["current_question"],
-                        "tech_score": scores["technical"],
-                        "comm_score": scores["communication"],
-                        "depth_score": scores["depth"],
-                    })
-                    state["running_scores"].append(scores)
-
-                    is_complete = state["current_turn"] >= state["total_questions"]
-
-                    if is_complete:
-                        await websocket.send_json({
-                            "type": "result",
-                            "transcript": text_answer,
-                            "scores": scores,
-                            "feedback": feedback,
-                            "turn_number": state["current_turn"],
-                            "is_complete": True,
-                        })
-                        await _finish_interview(session_id, proctor)
-                        break
-                    else:
-                        next_question = eval_result.get("next_question", "Tell me more.")
-                        next_topic = eval_result.get("next_topic", state["current_topic"])
-                        state["current_turn"] += 1
-                        state["current_question"] = next_question
-                        state["current_topic"] = next_topic
-                        await websocket.send_json({
-                            "type": "result",
-                            "transcript": text_answer,
-                            "scores": scores,
-                            "feedback": feedback,
-                            "next_question": next_question,
-                            "topic": next_topic,
-                            "turn_number": state["current_turn"],
-                            "total_questions": state["total_questions"],
-                            "is_complete": False,
-                        })
 
                     collecting_audio = True
                     dg_connect_tried = False
+                    if state.get("_interview_complete"):
+                        break
                     continue
 
                 if cmd == "stop_recording":
                     collecting_audio = False
 
-                    # Get final transcript then close this turn's Deepgram connection
+                    # Get final transcript + speech metrics, then close Deepgram
+                    speech_metrics = None
                     if transcriber and transcriber._is_connected:
                         transcript = await transcriber.wait_for_final_transcript(timeout=10)
+                        speech_metrics = transcriber.get_speech_metrics()
                         await transcriber.close()
                     elif transcriber:
                         transcript = transcriber.final_transcript
+                        speech_metrics = transcriber.get_speech_metrics()
                         await transcriber.close()
                     else:
                         transcript = ""
@@ -293,138 +223,184 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                         "transcript": transcript,
                     })
 
-                    # Evaluate answer and get next question
                     await websocket.send_json({"type": "processing"})
 
-                    eval_result = await evaluate_and_next(
-                        job_role=state["job_role"],
-                        job_description=state["job_description"],
-                        topics=state["topics"],
-                        difficulty=state["difficulty"],
-                        resume_summary=state["resume_summary"],
-                        current_question=state["current_question"],
-                        current_topic=state["current_topic"],
-                        answer_transcript=transcript,
-                        questions_asked=state["questions_asked"],
-                        turn_number=state["current_turn"],
-                        total_questions=state["total_questions"],
+                    await _process_answer(
+                        websocket, state, proctor, transcript, speech_metrics, None
                     )
 
-                    if "error" in eval_result:
-                        await websocket.send_json({
-                            "type": "error",
-                            "message": "Evaluation failed, moving on",
-                        })
-                        continue
-
-                    scores = {
-                        "technical": eval_result.get("technical_score", 5),
-                        "communication": eval_result.get("communication_score", 5),
-                        "depth": eval_result.get("depth_score", 5),
-                    }
-                    feedback = (
-                        f"Technical: {eval_result.get('technical_feedback', '')} | "
-                        f"Communication: {eval_result.get('communication_feedback', '')} | "
-                        f"Depth: {eval_result.get('depth_feedback', '')}"
-                    )
-
-                    # Save turn to MongoDB
-                    turn_doc = {
-                        "session_id": session_id,
-                        "turn_number": state["current_turn"],
-                        "question": state["current_question"],
-                        "topic": state["current_topic"],
-                        "difficulty": state["difficulty"],
-                        "answer_transcript": transcript,
-                        "scores": scores,
-                        "llm_feedback": feedback,
-                        "timestamp": datetime.now(timezone.utc),
-                    }
-                    await db.messages.insert_one(turn_doc)
-
-                    # Update in-memory state
-                    state["questions_asked"].append({
-                        "turn": state["current_turn"],
-                        "topic": state["current_topic"],
-                        "question": state["current_question"],
-                        "tech_score": scores["technical"],
-                        "comm_score": scores["communication"],
-                        "depth_score": scores["depth"],
-                    })
-                    state["running_scores"].append(scores)
-
-                    is_complete = state["current_turn"] >= state["total_questions"]
-
-                    if is_complete:
-                        # Interview complete
-                        await websocket.send_json({
-                            "type": "result",
-                            "transcript": transcript,
-                            "scores": scores,
-                            "feedback": feedback,
-                            "turn_number": state["current_turn"],
-                            "is_complete": True,
-                        })
-
-                        await _finish_interview(session_id, proctor)
-                        break
-                    else:
-                        # Send scores and next question
-                        next_question = eval_result.get("next_question", "Tell me more about your experience.")
-                        next_topic = eval_result.get("next_topic", state["current_topic"])
-
-                        state["current_turn"] += 1
-                        state["current_question"] = next_question
-                        state["current_topic"] = next_topic
-
-                        await websocket.send_json({
-                            "type": "result",
-                            "transcript": transcript,
-                            "scores": scores,
-                            "feedback": feedback,
-                            "next_question": next_question,
-                            "topic": next_topic,
-                            "turn_number": state["current_turn"],
-                            "total_questions": state["total_questions"],
-                            "is_complete": False,
-                        })
-
-                    # Reset for next question — fresh Deepgram connection next turn
                     collecting_audio = True
                     dg_connect_tried = False
+                    if state.get("_interview_complete"):
+                        break
 
                 elif cmd == "end_interview":
-                    await _finish_interview(session_id, proctor)
+                    await _finish_interview(session_id, proctor, state)
                     await websocket.send_json({"type": "ended"})
                     break
 
     except WebSocketDisconnect:
         logger.info("Client disconnected: session %s", session_id)
+    except asyncio.CancelledError:
+        logger.warning("Task cancelled for session %s", session_id)
     except Exception as e:
         logger.error("WebSocket error for session %s: %s", session_id, str(e))
     finally:
         if transcriber is not None:
             await transcriber.close()
         active_sessions.pop(session_id, None)
-        # Ensure session is marked if it wasn't already
         await db.sessions.update_one(
             {"_id": ObjectId(session_id), "status": "in_progress"},
             {"$set": {"status": "completed", "ended_at": datetime.now(timezone.utc)}},
         )
 
 
-async def _finish_interview(session_id: str, proctor: ProctoringAnalyzer):
+async def _process_answer(
+    websocket: WebSocket,
+    state: dict,
+    proctor: ProctoringAnalyzer,
+    answer_text: str,
+    speech_metrics: dict | None,
+    transcriber,
+):
+    """Evaluate an answer (voice or text), persist turn, send result to client."""
+    session_id = state["session_id"]
+
+    eval_result = await evaluate_and_next(
+        job_role=state["job_role"],
+        job_description=state["job_description"],
+        topics=state["topics"],
+        difficulty=state["difficulty"],
+        resume_summary=state["resume_summary"],
+        current_question=state["current_question"],
+        current_topic=state["current_topic"],
+        answer_transcript=answer_text,
+        questions_asked=state["questions_asked"],
+        turn_number=state["current_turn"],
+        total_questions=state["total_questions"],
+        speech_metrics=speech_metrics,
+        github_context=state.get("github_context", ""),
+    )
+
+    if "error" in eval_result:
+        await websocket.send_json({"type": "error", "message": "Evaluation failed"})
+        return
+
+    scores = {
+        "technical": eval_result.get("technical_score", 5),
+        "communication": eval_result.get("communication_score", 5),
+        "depth": eval_result.get("depth_score", 5),
+    }
+    justifications = {
+        "technical": eval_result.get("technical_justification", ""),
+        "communication": eval_result.get("communication_justification", ""),
+        "depth": eval_result.get("depth_justification", ""),
+    }
+    feedback = (
+        f"Technical: {eval_result.get('technical_justification', eval_result.get('technical_feedback', ''))} | "
+        f"Communication: {eval_result.get('communication_justification', eval_result.get('communication_feedback', ''))} | "
+        f"Depth: {eval_result.get('depth_justification', eval_result.get('depth_feedback', ''))}"
+    )
+    contradiction_note = eval_result.get("contradiction_note", "")
+
+    # Snapshot proctoring score for this question
+    proctoring_snapshot = proctor.get_proctoring_score()
+
+    # Save turn to MongoDB
+    turn_doc = {
+        "session_id": session_id,
+        "turn_number": state["current_turn"],
+        "question": state["current_question"],
+        "topic": state["current_topic"],
+        "difficulty": state["difficulty"],
+        "answer_transcript": answer_text,
+        "scores": scores,
+        "justifications": justifications,
+        "contradiction_note": contradiction_note,
+        "llm_feedback": feedback,
+        "speech_metrics": speech_metrics,
+        "proctoring_snapshot": proctoring_snapshot,
+        "timestamp": datetime.now(timezone.utc),
+    }
+    await db.messages.insert_one(turn_doc)
+
+    # Update in-memory state — include answer for cross-referencing
+    state["questions_asked"].append({
+        "turn": state["current_turn"],
+        "topic": state["current_topic"],
+        "question": state["current_question"],
+        "answer": answer_text,
+        "tech_score": scores["technical"],
+        "comm_score": scores["communication"],
+        "depth_score": scores["depth"],
+    })
+    state["running_scores"].append(scores)
+    if speech_metrics:
+        state["speech_metrics_all"].append(speech_metrics)
+
+    is_complete = state["current_turn"] >= state["total_questions"]
+
+    if is_complete:
+        await websocket.send_json({
+            "type": "result",
+            "transcript": answer_text,
+            "scores": scores,
+            "feedback": feedback,
+            "turn_number": state["current_turn"],
+            "is_complete": True,
+        })
+        await _finish_interview(session_id, proctor, state)
+        state["_interview_complete"] = True
+    else:
+        next_question = eval_result.get("next_question", "Tell me more.")
+        next_topic = eval_result.get("next_topic", state["current_topic"])
+        state["current_turn"] += 1
+        state["current_question"] = next_question
+        state["current_topic"] = next_topic
+        await websocket.send_json({
+            "type": "result",
+            "transcript": answer_text,
+            "scores": scores,
+            "feedback": feedback,
+            "next_question": next_question,
+            "topic": next_topic,
+            "turn_number": state["current_turn"],
+            "total_questions": state["total_questions"],
+            "is_complete": False,
+        })
+
+
+async def _finish_interview(session_id: str, proctor: ProctoringAnalyzer, state: dict | None = None):
     """Mark session completed, save proctoring data, trigger report generation."""
     proctoring_score = proctor.get_proctoring_score()
     proctoring_flags = proctor.get_flags_for_report()
 
+    # Aggregate speech metrics for report
+    speech_metrics_summary = None
+    if state and state.get("speech_metrics_all"):
+        all_sm = state["speech_metrics_all"]
+        total_words = sum(m.get("total_words", 0) for m in all_sm)
+        total_fillers = sum(m.get("filler_word_count", 0) for m in all_sm)
+        wpms = [m["words_per_minute"] for m in all_sm if m.get("words_per_minute", 0) > 0]
+        confs = [m["avg_confidence"] for m in all_sm if m.get("avg_confidence", 0) > 0]
+        speech_metrics_summary = {
+            "total_words": total_words,
+            "total_fillers": total_fillers,
+            "avg_wpm": sum(wpms) / len(wpms) if wpms else 0,
+            "avg_confidence": sum(confs) / len(confs) if confs else 0,
+        }
+
+    update_data = {
+        "status": "completed",
+        "ended_at": datetime.now(timezone.utc),
+        "proctoring_score": proctoring_score,
+        "proctoring_flags": proctoring_flags,
+    }
+    if speech_metrics_summary:
+        update_data["speech_metrics_summary"] = speech_metrics_summary
+
     await db.sessions.update_one(
         {"_id": ObjectId(session_id)},
-        {"$set": {
-            "status": "completed",
-            "ended_at": datetime.now(timezone.utc),
-            "proctoring_score": proctoring_score,
-            "proctoring_flags": proctoring_flags,
-        }},
+        {"$set": update_data},
     )
     asyncio.create_task(generate_report(session_id))

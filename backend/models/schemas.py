@@ -58,6 +58,7 @@ class CandidateResponse(BaseModel):
     email: str
     interview_id: str
     resume_text: Optional[str] = None
+    github_username: str = ""
     status: str
 
 
@@ -94,6 +95,10 @@ class MessageResponse(BaseModel):
     answer_transcript: str
     scores: TurnScore
     llm_feedback: str
+    justifications: Optional[dict] = None
+    contradiction_note: Optional[str] = None
+    speech_metrics: Optional[dict] = None
+    proctoring_snapshot: Optional[float] = None
     timestamp: datetime
 
 
@@ -112,11 +117,14 @@ class ReportResponse(BaseModel):
     interview_id: str
     overall_score: float
     dimension_scores: DimensionScores
+    dimension_justifications: Optional[dict] = None
     recommendation: str
     strengths: list[str]
     red_flags: list[str]
     proctoring_score: float
     proctoring_flags: list[dict] = []
+    per_question_proctoring: list[dict] = []
+    speech_metrics_summary: Optional[dict] = None
     full_summary: str
     generated_at: datetime
 

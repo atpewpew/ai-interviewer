@@ -15,12 +15,32 @@ const SEVERITY_COLORS = {
 };
 
 export default function ProctoringTimeline({ flags = [], score }) {
-  if (flags.length === 0) {
+  if (flags.length === 0 && score >= 90) {
     return (
       <div className="text-center py-3">
         <Shield size={32} color="var(--success)" className="mb-2" />
         <p style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.9rem' }}>
           Clean session — no flags detected
+        </p>
+        <div
+          className="progress-bar-ios mx-auto"
+          style={{ width: '80%', marginTop: '0.5rem' }}
+        >
+          <div className="fill" style={{ width: `${score}%` }} />
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+          {score}/100
+        </div>
+      </div>
+    );
+  }
+
+  if (flags.length === 0) {
+    return (
+      <div className="text-center py-3">
+        <AlertTriangle size={32} color="var(--warn)" className="mb-2" />
+        <p style={{ color: 'var(--warn)', fontWeight: 600, fontSize: '0.9rem' }}>
+          Minor issues detected
         </p>
         <div
           className="progress-bar-ios mx-auto"
