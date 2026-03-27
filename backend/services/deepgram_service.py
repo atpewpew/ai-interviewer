@@ -6,6 +6,9 @@ from config import DEEPGRAM_API_KEY
 logger = logging.getLogger(__name__)
 
 
+FILLER_WORDS = {"um", "uh", "like", "you know", "basically", "actually", "so", "well", "right", "okay"}
+
+
 class DeepgramTranscriber:
     """Manages a live Deepgram transcription session."""
 
@@ -16,6 +19,10 @@ class DeepgramTranscriber:
         self.interim_transcript = ""
         self._transcript_ready = asyncio.Event()
         self._is_connected = False
+        # Speech metadata accumulators
+        self._words: list[dict] = []  # {word, start, end, confidence}
+        self._confidence_sum: float = 0.0
+        self._confidence_count: int = 0
 
     async def connect(self):
         """Open a live transcription connection."""
@@ -70,16 +77,77 @@ class DeepgramTranscriber:
             except Exception:
                 pass
 
+    def get_speech_metrics(self) -> dict:
+        """Return accumulated speech quality metrics for the current turn."""
+        total_words = len(self._words)
+        if total_words == 0:
+            return {
+                "total_words": 0,
+                "avg_confidence": 0.0,
+                "words_per_minute": 0.0,
+                "filler_word_count": 0,
+                "filler_words_found": [],
+            }
+
+        avg_conf = self._confidence_sum / self._confidence_count if self._confidence_count else 0.0
+
+        # Calculate words per minute from word timestamps
+        if total_words >= 2:
+            duration = self._words[-1]["end"] - self._words[0]["start"]
+            wpm = (total_words / duration * 60) if duration > 0 else 0.0
+        else:
+            wpm = 0.0
+
+        # Count filler words
+        filler_found = []
+        for w in self._words:
+            if w["word"].lower().strip(".,!?") in FILLER_WORDS:
+                filler_found.append(w["word"].lower().strip(".,!?"))
+
+        return {
+            "total_words": total_words,
+            "avg_confidence": round(avg_conf, 3),
+            "words_per_minute": round(wpm, 1),
+            "filler_word_count": len(filler_found),
+            "filler_words_found": filler_found,
+        }
+
+    def reset_turn_metrics(self):
+        """Reset metrics accumulators for a new turn."""
+        self.final_transcript = ""
+        self.interim_transcript = ""
+        self._transcript_ready.clear()
+        self._words = []
+        self._confidence_sum = 0.0
+        self._confidence_count = 0
+
     async def _on_transcript(self, _self, result, **kwargs):
         """Handle transcript events from Deepgram."""
         try:
-            transcript = result.channel.alternatives[0].transcript
+            alt = result.channel.alternatives[0]
+            transcript = alt.transcript
             if not transcript:
                 return
 
             if result.is_final:
                 self.final_transcript += " " + transcript
                 self.final_transcript = self.final_transcript.strip()
+
+                # Extract word-level data from final results
+                if hasattr(alt, "words") and alt.words:
+                    for w in alt.words:
+                        self._words.append({
+                            "word": w.word if hasattr(w, "word") else str(w),
+                            "start": getattr(w, "start", 0),
+                            "end": getattr(w, "end", 0),
+                            "confidence": getattr(w, "confidence", 0),
+                        })
+
+                # Accumulate utterance-level confidence
+                if hasattr(alt, "confidence") and alt.confidence:
+                    self._confidence_sum += alt.confidence
+                    self._confidence_count += 1
+
                 if result.speech_final:
                     self._transcript_ready.set()
             else:

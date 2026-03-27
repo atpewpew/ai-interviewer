@@ -13,6 +13,7 @@ async def register_candidate(
     name: str = Form(...),
     email: str = Form(...),
     interview_id: str = Form(...),
+    github_username: str = Form(""),
     resume: UploadFile = File(...),
 ):
     interview = await db.interviews.find_one({"_id": ObjectId(interview_id)})
@@ -33,6 +34,7 @@ async def register_candidate(
         "email": email,
         "interview_id": interview_id,
         "resume_text": resume_text,
+        "github_username": github_username.strip() if github_username else "",
         "status": "pending",
         "created_at": datetime.now(timezone.utc),
     }
@@ -55,6 +57,7 @@ async def register_candidate(
         email=email,
         interview_id=interview_id,
         resume_text=resume_text,
+        github_username=github_username.strip() if github_username else "",
         status="pending",
     )
 
@@ -70,6 +73,7 @@ async def list_candidates_for_interview(interview_id: str):
             email=c["email"],
             interview_id=c["interview_id"],
             resume_text=c.get("resume_text"),
+            github_username=c.get("github_username", ""),
             status=c["status"],
         )
         for c in results
@@ -87,5 +91,6 @@ async def get_candidate(candidate_id: str):
         email=c["email"],
         interview_id=c["interview_id"],
         resume_text=c.get("resume_text"),
+        github_username=c.get("github_username", ""),
         status=c["status"],
     )
