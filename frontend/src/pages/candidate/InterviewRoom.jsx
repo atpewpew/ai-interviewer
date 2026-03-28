@@ -5,9 +5,11 @@ import { useInterview, InterviewProvider } from '../../context/InterviewContext'
 import { useMicrophone } from '../../hooks/useMicrophone';
 import { useSpeech } from '../../hooks/useSpeech';
 import { useProctoring } from '../../hooks/useProctoring';
-import TranscriptPanel from '../../components/candidate/TranscriptPanel';
-import QuestionDisplay from '../../components/candidate/QuestionDisplay';
-import { Mic, MicOff, AlertCircle, Keyboard } from 'lucide-react';
+import {
+  Mic, MicOff, Camera, CameraOff,
+  AlertCircle, Keyboard, PhoneOff, MessageSquare,
+} from 'lucide-react';
+import '../../styles/interview-room.css';
 
 function InterviewRoomInner() {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ function InterviewRoomInner() {
 
   const [inputMode, setInputMode] = useState('voice'); // 'voice' | 'text'
   const [textInput, setTextInput] = useState('');
+  const [camOn, setCamOn] = useState(true);
 
   // Connect WebSocket on mount, clean up on unmount
   useEffect(() => {
@@ -109,296 +112,298 @@ function InterviewRoomInner() {
 
   const progress = totalQuestions > 0 ? ((turnNumber) / totalQuestions) * 100 : 0;
 
+  // Proctoring risk helpers
+  const risk = proctoringRisk.score;
+  const gaugeColor = risk < 30 ? '#22c55e' : risk < 70 ? '#eab308' : '#ef4444';
+  const riskLabel = risk < 30 ? 'Low Risk' : risk < 70 ? 'Med Risk' : 'High Risk';
+  const CIRC = 94.25;
+  const offset = CIRC - (risk / 100) * CIRC;
+
+  // Transcript helpers
+  const hasTranscript = transcript || interimTranscript;
+
   return (
-    <div className="interview-room">
-      {/* Left — Video Feed */}
-      <div className="video-section">
-        <Webcam
-          ref={webcamRef}
-          audio={false}
-          width="100%"
-          height="100%"
-          videoConstraints={{ facingMode: 'user' }}
-          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-        />
-
-        {/* Recording indicator overlay */}
-        {interviewState === 'LISTENING' && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 20,
-              left: 20,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'rgba(46,125,50,0.85)',
-              padding: '8px 16px',
-              borderRadius: 20,
-              color: 'white',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-            }}
-          >
-            <div className="recording-dot" />
-            Recording
-            {/* Mini volume bar */}
-            <div style={{ width: 50, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>
-              <div style={{ height: '100%', borderRadius: 2, background: 'var(--text-primary)', width: `${Math.max(5, volumeLevel * 100)}%`, transition: 'width 0.1s' }} />
-            </div>
-          </div>
-        )}
-
-        {interviewState === 'AI_SPEAKING' && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 20,
-              left: 20,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'rgba(98,0,234,0.85)',
-              padding: '8px 16px',
-              borderRadius: 20,
-              color: 'white',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-            }}
-          >
-            <div className="ai-speaking-indicator" style={{ height: 16, gap: 2 }}>
-              {[1, 2, 3].map(i => <div key={i} className="bar" style={{ height: 4, width: 3 }} />)}
-            </div>
-            AI Speaking...
-          </div>
-        )}
-
-        {/* Live proctoring risk overlay */}
-        {(() => {
-          const risk = proctoringRisk.score;
-          const gaugeColor = risk < 30 ? '#22c55e' : risk < 70 ? '#eab308' : '#ef4444';
-          const label = risk < 30 ? 'Low Risk' : risk < 70 ? 'Med Risk' : 'High Risk';
-          const CIRC = 94.25; // 2π×15
-          const offset = CIRC - (risk / 100) * CIRC;
-          return (
-            <div
-              style={{
-                position: 'absolute',
-                top: 14,
-                right: 14,
-                background: 'rgba(0,0,0,0.72)',
-                borderRadius: 12,
-                padding: '8px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                backdropFilter: 'blur(6px)',
-                border: `1px solid ${gaugeColor}44`,
-              }}
-            >
-              {/* Mini SVG ring gauge */}
-              <svg width={36} height={36} viewBox="0 0 36 36">
-                <circle cx={18} cy={18} r={15} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={3} />
-                <circle
-                  cx={18} cy={18} r={15}
-                  fill="none"
-                  stroke={gaugeColor}
-                  strokeWidth={3}
-                  strokeDasharray={CIRC}
-                  strokeDashoffset={offset}
-                  strokeLinecap="round"
-                  transform="rotate(-90 18 18)"
-                  style={{ transition: 'stroke-dashoffset 0.6s ease, stroke 0.4s ease' }}
-                />
-                <text x={18} y={22} textAnchor="middle" fill="white" fontSize={9} fontWeight="bold">
-                  {Math.round(risk)}
-                </text>
-              </svg>
-              <div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: gaugeColor }}>{label}</div>
-                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.6)', maxWidth: 110, lineHeight: 1.3 }}>
-                  {proctoringRisk.message}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-      </div>
-
-      {/* Right — Interview Panel */}
-      <div className="interview-panel">
-        {/* Progress bar */}
-        <div className="mb-3">
-          <div className="d-flex justify-content-between align-items-center mb-1">
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Question {turnNumber} of {totalQuestions}
-            </span>
-            {currentTopic && (
-              <span className="chip">{currentTopic}</span>
-            )}
-          </div>
-          <div className="progress-bar-ios">
-            <div className="fill" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
-
-        {/* Question Display */}
-        <QuestionDisplay question={currentQuestion} />
-
-        {/* State Banner */}
-        {interviewState === 'AI_SPEAKING' && (
-          <div style={{
-            background: 'linear-gradient(135deg, var(--primary-purple), var(--deep-violet))',
-            color: 'white',
-            padding: '14px 18px',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginTop: '0.75rem',
-          }}>
-            <div className="ai-speaking-indicator" style={{ height: 22 }}>
-              {[1, 2, 3, 4, 5].map(i => <div key={i} className="bar" style={{ height: 6 }} />)}
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>AI is speaking</div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.85 }}>Listen carefully — your mic will activate when done</div>
-            </div>
-          </div>
-        )}
-
-        {interviewState === 'LISTENING' && (
-          <div style={{
-            background: 'linear-gradient(135deg, #2e7d32, #43a047)',
-            color: 'white',
-            padding: '14px 18px',
-            borderRadius: 'var(--radius-md)',
-            marginTop: '0.75rem',
-          }}>
-            {inputMode === 'voice' ? (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <Mic size={20} />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>YOUR TURN — Speak now</div>
-                    <div style={{ fontSize: '0.75rem', opacity: 0.85 }}>Click "Submit Answer" when finished</div>
-                  </div>
-                </div>
-                {/* Volume level bar */}
-                <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.25)' }}>
-                  <div style={{
-                    height: '100%',
-                    borderRadius: 3,
-                    background: 'var(--text-primary)',
-                    width: `${Math.max(3, volumeLevel * 100)}%`,
-                    transition: 'width 0.1s ease',
-                  }} />
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <Keyboard size={20} />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>YOUR TURN — Type your answer</div>
-                    <div style={{ fontSize: '0.75rem', opacity: 0.85 }}>Press Enter to submit, Shift+Enter for new line</div>
-                  </div>
-                </div>
-                <textarea
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleTextSubmit();
-                    }
-                  }}
-                  rows={3}
-                  placeholder="Type your answer here..."
-                  style={{
-                    width: '100%',
-                    background: '#2C2C2C',
-                    border: '1px solid rgba(115,83,246,0.3)',
-                    borderRadius: 'var(--radius-md)',
-                    color: 'white',
-                    padding: '10px 14px',
-                    fontSize: '0.9rem',
-                    resize: 'none',
-                    maxHeight: 150,
-                    outline: 'none',
-                    fontFamily: 'inherit',
-                  }}
-                />
-              </>
-            )}
-          </div>
-        )}
-        {/* Live Transcript */}
-        <div style={{ flex: 1, overflowY: 'auto', marginTop: '1rem' }}>
-          <TranscriptPanel
-            transcript={transcript}
-            interimTranscript={interimTranscript}
-          />
-        </div>
-
-        {/* Action buttons */}
-        <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border-color)' }}>
+    <div className="ir2-room">
+      {/* ════════ TOP BAR ════════ */}
+      <div className="ir2-topbar">
+        <div className="ir2-topbar-left">
+          {/* Recording pill */}
           {interviewState === 'LISTENING' && (
-            <div className="d-flex gap-2">
-              <button
-                className="btn-outline-purple d-flex align-items-center gap-1"
-                style={{ fontSize: '0.85rem' }}
-                onClick={toggleInputMode}
-              >
-                {inputMode === 'voice' ? <Keyboard size={16} /> : <Mic size={16} />}
-                {inputMode === 'voice' ? 'Type' : 'Speak'}
-              </button>
-              <button
-                className="btn-gradient flex-grow-1 d-flex align-items-center justify-content-center gap-2"
-                onClick={inputMode === 'voice' ? handleSubmitAnswer : handleTextSubmit}
-              >
-                {inputMode === 'voice' && <MicOff size={18} />}
-                Submit Answer
-              </button>
-            </div>
-          )}
-
-          {interviewState === 'PROCESSING' && (
-            <div className="text-center py-3">
-              <div className="spinner-border" style={{ color: 'var(--primary-purple)' }} />
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 8 }}>
-                Evaluating your response...
-              </p>
-            </div>
-          )}
-
-          {interviewState === 'COMPLETED' && (
-            <div className="text-center py-3">
-              <AlertCircle size={32} color="var(--primary-purple)" className="mb-2" />
-              <h4 style={{ fontFamily: 'var(--font-heading)', color: 'var(--text-primary)' }}>
-                INTERVIEW COMPLETE
-              </h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                Your report is being generated. Redirecting...
-              </p>
+            <div className="ir2-rec-pill">
+              <div className="ir2-rec-dot" />
+              REC
+              <div className="ir2-vol-bars">
+                {[1, 2, 3, 4].map(i => (
+                  <div
+                    key={i}
+                    style={{ height: `${Math.max(3, volumeLevel * 12 * (i * 0.6))}px` }}
+                  />
+                ))}
+              </div>
             </div>
           )}
 
           {interviewState === 'AI_SPEAKING' && (
-            <div className="text-center py-2">
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                <Mic size={14} className="me-1" />
-                Mic will activate after AI finishes speaking
+            <div className="ir2-rec-pill" style={{ background: 'rgba(115,83,246,0.15)', borderColor: 'rgba(115,83,246,0.3)', color: '#7353F6' }}>
+              <div className="ir2-rec-dot" style={{ background: '#7353F6' }} />
+              AI SPEAKING
+            </div>
+          )}
+
+          {/* Risk pill */}
+          <div className="ir2-risk-pill">
+            <div className="ir2-risk-dot" style={{ backgroundColor: gaugeColor, boxShadow: `0 0 8px ${gaugeColor}` }} />
+            <div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'white', letterSpacing: '0.5px' }}>
+                {riskLabel.toUpperCase()}
+              </div>
+              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.6)', maxWidth: 120, lineHeight: 1.2 }}>
+                {proctoringRisk.message}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="ir2-topbar-right">
+          <div className="ir2-timer">
+            <div className="ir2-timer-dot" />
+            LIVE
+          </div>
+        </div>
+      </div>
+
+
+
+      {/* ════════ LEFT PANEL — AI Avatar + Camera PiP ════════ */}
+      <div className="ir2-left">
+        {/* AI Orb */}
+        <div className="ir2-orb-wrapper">
+          <div className={`ir2-orb ${interviewState === 'AI_SPEAKING' ? 'speaking' : ''}`} />
+        </div>
+
+        {/* AI Speech Bubble */}
+        {currentQuestion && (
+          <div className="ir2-ai-bubble">
+            {interviewState === 'AI_SPEAKING' && (
+              <div className="bubble-prefix">
+                <div className="bars">
+                  <div style={{ height: 6 }} />
+                  <div style={{ height: 10 }} />
+                  <div style={{ height: 4 }} />
+                </div>
+              </div>
+            )}
+            "{currentQuestion}"
+          </div>
+        )}
+
+        {/* Camera PiP */}
+        <div className="ir2-pip" style={{ display: camOn ? 'block' : 'none' }}>
+          <Webcam
+            ref={webcamRef}
+            audio={false}
+            videoConstraints={{ facingMode: 'user' }}
+            style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+          />
+          <div className="ir2-pip-label">
+            <div className="live-dot" />
+            YOU
+          </div>
+        </div>
+
+        {/* Overlay webcam still needed for proctoring when camera "off" visually */}
+        {!camOn && (
+          <Webcam
+            ref={webcamRef}
+            audio={false}
+            videoConstraints={{ facingMode: 'user' }}
+            style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+          />
+        )}
+
+        {/* Bottom Controls */}
+        <div className="ir2-controls">
+          <button
+            className={`ir2-ctrl-btn ${isRecording ? 'active' : ''}`}
+            onClick={() => {
+              if (isRecording) stopRecording();
+              else if (interviewState === 'LISTENING') startRecording();
+            }}
+            title={isRecording ? 'Mute' : 'Unmute'}
+          >
+            {isRecording ? <Mic size={18} /> : <MicOff size={18} />}
+          </button>
+          <button
+            className="ir2-ctrl-btn"
+            onClick={() => setCamOn(!camOn)}
+            title={camOn ? 'Turn off camera' : 'Turn on camera'}
+          >
+            {camOn ? <Camera size={18} /> : <CameraOff size={18} />}
+          </button>
+          <button
+            className="ir2-ctrl-btn"
+            onClick={toggleInputMode}
+            title={inputMode === 'voice' ? 'Switch to text' : 'Switch to voice'}
+          >
+            <MessageSquare size={18} />
+          </button>
+          <button
+            className="ir2-ctrl-btn leave"
+            onClick={() => navigate('/interview/complete')}
+          >
+            <PhoneOff size={14} />
+            LEAVE
+          </button>
+        </div>
+      </div>
+
+      {/* ════════ RIGHT PANEL ════════ */}
+      <div className="ir2-right">
+        {/* Question Display */}
+        {currentQuestion && (
+          <div className="ir2-question">{currentQuestion}</div>
+        )}
+
+        {/* State Banners */}
+        {interviewState === 'AI_SPEAKING' && (
+          <div className="ir2-state-banner ai-speaking">
+            <div className="banner-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
+            </div>
+            <div>
+              <div className="banner-title">AI IS SPEAKING</div>
+              <div className="banner-sub">Listen carefully — your mic will activate when done</div>
+            </div>
+          </div>
+        )}
+
+        {interviewState === 'LISTENING' && (
+          <>
+            <div className="ir2-state-banner listening">
+              <div className="banner-icon">
+                <Mic size={18} className={inputMode === 'voice' && isRecording ? 'ir2-pulsing-mic' : ''} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div className="banner-title">
+                  {inputMode === 'voice' ? 'YOUR TURN — Speak now' : 'YOUR TURN — Type your answer'}
+                </div>
+                <div className="banner-sub">
+                  {inputMode === 'voice'
+                    ? 'Click "Submit Answer" when finished'
+                    : 'Press Enter to submit, Shift+Enter for new line'}
+                </div>
+                {inputMode === 'voice' && (
+                  <div className="ir2-vol-track">
+                    <div
+                      className="ir2-vol-fill"
+                      style={{ width: `${Math.max(3, volumeLevel * 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Text input area (text mode) */}
+            {inputMode === 'text' && (
+              <textarea
+                className="ir2-text-input"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleTextSubmit();
+                  }
+                }}
+                rows={3}
+                placeholder="Type your answer here..."
+              />
+            )}
+          </>
+        )}
+
+        {/* Transcript Area */}
+        <div className="ir2-transcript">
+          {hasTranscript ? (
+            <>
+              <div className="ir2-transcript-label">Your Response</div>
+              <p className="ir2-transcript-text">
+                {transcript}
+                {interimTranscript && (
+                  <span className="interim"> {interimTranscript}</span>
+                )}
               </p>
+            </>
+          ) : (
+            <div className="ir2-transcript-empty">
+              Your response will appear here...
+            </div>
+          )}
+        </div>
+
+        {/* Metadata Card below Transcript */}
+        <div className="ir2-metadata-card" style={{ marginTop: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontFamily: 'Bebas Neue, var(--font-heading)', color: 'var(--text-primary)', letterSpacing: '1px', fontSize: '1.2rem', marginTop: 4 }}>
+              QUESTION {turnNumber} OF {totalQuestions}
+            </span>
+            {currentTopic && (
+              <span className="ir2-topic-chip">{currentTopic}</span>
+            )}
+          </div>
+          <div className="ir2-progress-track">
+            <div className="ir2-progress-fill" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="ir2-actions">
+          {interviewState === 'LISTENING' && (
+            <>
+              <button className="ir2-btn-outline" onClick={toggleInputMode}>
+                {inputMode === 'voice' ? <Keyboard size={16} /> : <Mic size={16} />}
+                {inputMode === 'voice' ? 'Type' : 'Speak'}
+              </button>
+              <button
+                className="ir2-btn-gradient"
+                onClick={inputMode === 'voice' ? handleSubmitAnswer : handleTextSubmit}
+              >
+                {inputMode === 'voice' && <MicOff size={16} />}
+                Submit Answer
+              </button>
+            </>
+          )}
+
+          {interviewState === 'PROCESSING' && (
+            <div className="ir2-status" style={{ width: '100%' }}>
+              <div className="spinner" style={{ margin: '0 auto' }} />
+              <p>Evaluating your response...</p>
+            </div>
+          )}
+
+          {interviewState === 'COMPLETED' && (
+            <div className="ir2-status" style={{ width: '100%' }}>
+              <AlertCircle size={28} color="#7353F6" style={{ margin: '0 auto', display: 'block' }} />
+              <h4>INTERVIEW COMPLETE</h4>
+              <p>Your report is being generated. Redirecting...</p>
+            </div>
+          )}
+
+          {interviewState === 'AI_SPEAKING' && (
+            <div className="ir2-ai-speaking-pills" style={{ width: '100%' }}>
+              <Mic size={14} />
+              Mic will activate after AI finishes speaking
             </div>
           )}
 
           {interviewState === 'IDLE' && (
-            <div className="text-center py-3">
-              <div className="spinner-border spinner-border-sm" style={{ color: 'var(--primary-purple)' }} />
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 8 }}>
-                Connecting to interview...
-              </p>
+            <div className="ir2-status" style={{ width: '100%' }}>
+              <div className="spinner" style={{ margin: '0 auto' }} />
+              <p>Connecting to interview...</p>
             </div>
           )}
         </div>

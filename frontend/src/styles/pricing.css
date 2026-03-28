@@ -1,0 +1,376 @@
+/* ── Pricing Page Styles ──────────────────────── */
+
+.pricing-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Ambient glow behind hero area */
+.pricing-page .pricing-ambient-glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vw;
+  height: 50vh;
+  background: linear-gradient(135deg, rgba(115, 83, 246, 0.15), rgba(0, 192, 255, 0.1));
+  filter: blur(100px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Grid background */
+.pricing-page .pricing-grid-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.3;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(45, 45, 53, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 45, 53, 0.3) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Hero Section ── */
+.pricing-hero {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 7rem 2rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.pricing-hero h1 {
+  font-family: var(--font-heading);
+  font-size: clamp(2.5rem, 5vw, 3.8rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.pricing-hero .pricing-gradient-text {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pricing-hero p {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ── Billing Toggle ── */
+.billing-toggle {
+  display: flex;
+  justify-content: center;
+  margin: 2.5rem 0 3.5rem;
+}
+
+.billing-toggle-inner {
+  display: flex;
+  height: 48px;
+  align-items: center;
+  border-radius: 2px;
+  background: #141419;
+  border: 1px solid var(--border-color);
+  padding: 4px;
+  max-width: 360px;
+  width: 100%;
+}
+
+.billing-toggle-btn {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.billing-toggle-btn.active {
+  background: var(--gradient);
+  color: white;
+}
+
+/* ── Cards Grid ── */
+.pricing-cards {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .pricing-cards {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* Individual card */
+.pricing-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 2px;
+  background: #141419;
+  border: 1px solid var(--border-color);
+  padding: 2rem;
+  min-height: 500px;
+  transition: all 0.3s ease;
+}
+
+.pricing-card:hover {
+  box-shadow: inset 0 0 20px rgba(115, 83, 246, 0.05);
+  border-color: var(--text-muted);
+}
+
+/* Pro card emphasis */
+.pricing-card.pro {
+  border-top: 3px solid var(--primary-purple);
+  box-shadow: 0 0 40px rgba(115, 83, 246, 0.15);
+  min-height: 540px;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .pricing-card.pro {
+    transform: scale(1.05);
+    z-index: 10;
+  }
+  .pricing-card.pro:hover {
+    transform: scale(1.07);
+  }
+}
+
+/* Popular badge */
+.pricing-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gradient);
+  color: white;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* Card header */
+.pricing-card-header {
+  margin-bottom: 2rem;
+}
+
+.pricing-card-title {
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pricing-card-title .bolt-icon {
+  color: var(--primary-purple);
+}
+
+.pricing-card-desc {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  min-height: 40px;
+}
+
+/* Price */
+.pricing-card-price {
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: baseline;
+}
+
+.pricing-card-price .dollar {
+  font-family: var(--font-body);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pricing-card-price .amount {
+  font-family: var(--font-body);
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -1px;
+}
+
+.pricing-card-price .amount.custom {
+  font-size: 3rem;
+}
+
+.pricing-card-price .period {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-left: 0.5rem;
+}
+
+/* Feature list */
+.pricing-features {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  list-style: none;
+  padding: 0;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.pricing-features .check-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #00C0FF;
+}
+
+.pricing-features .feature-text {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.pricing-features .feature-text.highlight {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* CTA buttons */
+.pricing-btn-outline {
+  width: 100%;
+  height: 48px;
+  border-radius: 2px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: auto;
+}
+
+.pricing-btn-outline:hover {
+  border-color: var(--primary-purple);
+  color: var(--lavender);
+}
+
+.pricing-btn-gradient {
+  width: 100%;
+  height: 48px;
+  border-radius: 2px;
+  border: none;
+  background: var(--gradient);
+  color: white;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: auto;
+}
+
+.pricing-btn-gradient:hover {
+  box-shadow: 0 0 40px rgba(115, 83, 246, 0.3);
+}
+
+/* ── Trust Indicators ── */
+.pricing-trust {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  margin-top: 5rem;
+  padding: 0 2rem 4rem;
+}
+
+.pricing-trust p {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.pricing-trust-logos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  opacity: 0.5;
+  transition: opacity 0.5s;
+}
+
+.pricing-trust-logos:hover {
+  opacity: 0.8;
+}
+
+.pricing-trust-logo {
+  height: 32px;
+  width: 96px;
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  background: #141419;
+}

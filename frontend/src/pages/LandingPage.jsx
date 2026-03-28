@@ -4,6 +4,7 @@ import {
   Brain, Mic, Shield, BarChart3, Zap, Clock,
   ArrowRight, ChevronRight, Sparkles,
 } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 export default function LandingPage() {
   const { user } = useAuth();
@@ -25,22 +26,16 @@ export default function LandingPage() {
         }}
       >
         <div className="d-flex align-items-center gap-2">
-          <div
-            style={{
-              width: 34, height: 34, borderRadius: 'var(--radius-sm)',
-              background: 'var(--gradient)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontFamily: 'var(--font-heading)', fontSize: '1.1rem',
-            }}
-          >IO</div>
+          <img src={logoImg} alt="InterviewOS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
           <span style={{
             fontFamily: 'var(--font-heading)', fontSize: '1.4rem',
             color: 'var(--text-primary)', letterSpacing: '2px',
           }}>
-            INTERVIEWOS
+            INTERVIEW<span style={{ color: '#00C0FF', textShadow: '0 0 10px rgba(0,192,255,0.4)' }}>OS</span>
           </span>
         </div>
         <div className="d-flex align-items-center gap-3">
+          <Link to="/pricing" className="btn-ghost">Pricing</Link>
           {user ? (
             <Link to="/recruiter/dashboard" className="btn-gradient" style={{ padding: '0.5rem 1.5rem' }}>
               Dashboard <ChevronRight size={16} />
@@ -228,20 +223,12 @@ export default function LandingPage() {
           fontSize: '0.8rem',
         }}
       >
-        <div className="d-flex align-items-center justify-content-center gap-2 mb-2">
-          <div
-            style={{
-              width: 24, height: 24, borderRadius: 4,
-              background: 'var(--gradient)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontFamily: 'var(--font-heading)', fontSize: '0.7rem',
-            }}
-          >IO</div>
+        <div className="d-flex align-items-center justify-content-center gap-2">
+          <img src={logoImg} alt="InterviewOS" style={{ width: 22, height: 22, objectFit: 'contain' }} />
           <span style={{ fontFamily: 'var(--font-heading)', letterSpacing: 1.5, color: 'var(--text-secondary)' }}>
-            INTERVIEWOS
+            INTERVIEW<span style={{ color: '#00C0FF', textShadow: '0 0 10px rgba(0,192,255,0.4)' }}>OS</span>
           </span>
         </div>
-        Built for Agentica 2.0 Hackathon &middot; Powered by Groq &amp; Deepgram
       </footer>
     </div>
   );

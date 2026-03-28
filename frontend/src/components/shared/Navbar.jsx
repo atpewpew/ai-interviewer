@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, LayoutDashboard, Briefcase } from 'lucide-react';
+import logo from '../../assets/logo.png';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -12,21 +13,28 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="navbar-dark d-flex align-items-center justify-content-between px-4 py-3">
+    <nav
+      className="d-flex align-items-center justify-content-between px-4 py-3"
+      style={{
+        background: 'rgba(10, 10, 15, 0.95)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50
+      }}
+    >
       <Link to="/" className="d-flex align-items-center gap-2 text-decoration-none">
-        <div
-          style={{
-            width: 32, height: 32, borderRadius: 'var(--radius-sm)',
-            background: 'var(--gradient)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontFamily: 'var(--font-heading)', fontSize: '1rem',
-          }}
-        >IO</div>
+        <img
+          src={logo}
+          alt="InterviewOS Logo"
+          style={{ width: 32, height: 32, objectFit: 'contain' }}
+        />
         <span style={{
           fontFamily: 'var(--font-heading)', fontSize: '1.3rem',
           color: 'var(--text-primary)', letterSpacing: '2px',
         }}>
-          INTERVIEWOS
+          INTERVIEW<span style={{ color: '#00C0FF', textShadow: '0 0 10px rgba(0,192,255,0.4)' }}>OS</span>
         </span>
       </Link>
 

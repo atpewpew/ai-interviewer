@@ -8,6 +8,7 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import {
   ChevronRight, ChevronLeft, UserCheck, UserX, Play, FileText,
   Users, Clock, CheckCircle, XCircle, Award, BarChart3, Video,
+  Code, Sparkles, Clipboard,
 } from 'lucide-react';
 
 const STAGE_COLORS = {
@@ -136,187 +137,316 @@ export default function JobPipeline() {
   if (!job) return <div className="page-container"><Navbar /><div className="container py-4 page-content"><p>Job not found</p></div></div>;
 
   return (
-    <div className="page-container">
-      <Navbar />
-      <div className="container-fluid py-4 page-content">
-        {/* Header */}
-        <div className="d-flex justify-content-between align-items-center mb-3 px-3">
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.8rem', color: 'var(--text-primary)' }}>
-              {job.title}
-            </h1>
-            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>
-              {job.department}{job.department && job.location ? ' · ' : ''}{job.location} — {applications.length} applicants
-            </p>
-          </div>
-          <button className="btn-outline-purple" style={{ fontSize: '0.85rem' }}
-            onClick={() => {
-              const link = `${window.location.origin}/jobs/${job.id}/apply`;
-              navigator.clipboard.writeText(link);
-              alert('Application link copied!');
-            }}>
-            Copy Apply Link
-          </button>
-        </div>
-
-        {/* Kanban Board */}
-        <div className="d-flex gap-3 px-3" style={{ overflowX: 'auto', paddingBottom: '1rem' }}>
-          {columns.map((col) => {
-            const isSpecial = col.round_number === -1 || col.round_number === 999;
-            const borderColor = col.round_type === 'rejected' ? '#ef4444'
-              : col.round_type === 'hired' ? '#f59e0b'
-              : 'var(--primary-purple)';
-
-            return (
-              <div key={col.round_number} style={{
-                minWidth: 300, maxWidth: 320, flex: '0 0 300px',
+    <>
+      <style>{`
+        .pipeline-container {
+          background-color: #0A0A0F;
+          min-height: 100vh;
+          font-family: 'Montserrat', sans-serif;
+        }
+        .pipeline-title {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 2.2rem;
+          color: white;
+          margin: 0;
+          text-transform: uppercase;
+        }
+        .pipeline-subtitle {
+          color: #6B7280;
+          font-size: 0.9rem;
+          margin: 0;
+        }
+        .btn-copy-apply {
+          background: linear-gradient(to right, #7353F6, #00C0FF);
+          border: none;
+          color: white;
+          padding: 0.6rem 1.2rem;
+          border-radius: 8px;
+          box-shadow: 0 0 20px rgba(115,83,246,0.4);
+          font-family: 'Montserrat', sans-serif;
+          font-size: 0.85rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: filter 0.2s;
+        }
+        .btn-copy-apply:hover {
+          filter: brightness(1.1);
+        }
+        .kanban-col {
+          background: #12121A;
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 16px;
+          border-top: 3px solid #7353F6;
+          min-width: 300px;
+          max-width: 320px;
+          flex: 0 0 300px;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+        }
+        .kanban-col-header {
+          padding: 1rem 1rem 0.5rem 1rem;
+        }
+        .kanban-col-title {
+          font-family: 'Bebas Neue', sans-serif;
+          color: white;
+          text-transform: uppercase;
+          font-size: 1.1rem;
+          margin: 0;
+        }
+        .kanban-badge {
+          background: rgba(115,83,246,0.2);
+          border: 1px solid rgba(115,83,246,0.4);
+          color: #A88BFF;
+          font-family: 'Montserrat', sans-serif;
+          font-size: 0.75rem;
+          border-radius: 100px;
+          padding: 2px 8px;
+        }
+        .kanban-subtext {
+          font-family: 'Montserrat', sans-serif;
+          font-size: 0.75rem;
+          color: #6B7280;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .kanban-col-body {
+          padding: 0.5rem 1rem 1rem 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          flex: 1;
+        }
+        .card-candidate {
+          background: #1A1A2E;
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 12px;
+          padding: 1rem;
+          transition: border-color 0.2s, transform 0.2s;
+        }
+        .card-candidate:hover {
+          border-color: rgba(115,83,246,0.3);
+          transform: translateY(-1px);
+        }
+        .cand-name {
+          font-family: 'Montserrat', sans-serif;
+          font-weight: 600;
+          color: white;
+          font-size: 0.9rem;
+          margin-bottom: 2px;
+        }
+        .cand-email {
+          font-family: 'Montserrat', sans-serif;
+          color: #6B7280;
+          font-size: 0.75rem;
+          margin-bottom: 8px;
+        }
+        .status-badge-pending {
+          background: rgba(245,158,11,0.15);
+          border: 1px solid rgba(245,158,11,0.3);
+          color: #F59E0B;
+          padding: 2px 8px;
+          border-radius: 100px;
+          font-size: 0.7rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .status-badge-completed {
+          background: rgba(34,197,94,0.15);
+          border: 1px solid rgba(34,197,94,0.3);
+          color: #22C55E;
+          padding: 2px 8px;
+          border-radius: 100px;
+          font-size: 0.7rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .card-actions {
+          display: flex;
+          gap: 0.5rem;
+          margin-top: 1rem;
+          flex-wrap: wrap;
+        }
+        .action-btn {
+          font-family: 'Montserrat', sans-serif;
+          font-size: 0.75rem;
+          border-radius: 8px;
+          padding: 4px 10px;
+          column-gap: 4px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
+          height: 28px;
+          text-decoration: none;
+        }
+        .btn-start {
+          background: rgba(115,83,246,0.2);
+          border: 1px solid rgba(115,83,246,0.4);
+          color: #A88BFF;
+          transition: background 0.2s;
+        }
+        .btn-start:hover { background: rgba(115,83,246,0.4); }
+        .btn-scorecard {
+          background: transparent;
+          border: 1px solid rgba(255,255,255,0.12);
+          color: white;
+          transition: border-color 0.2s;
+        }
+        .btn-scorecard:hover { border-color: #7353F6; }
+        .btn-reject {
+          background: rgba(239,68,68,0.1);
+          border: 1px solid rgba(239,68,68,0.3);
+          color: #EF4444;
+          transition: background 0.2s;
+        }
+        .btn-reject:hover { background: rgba(239,68,68,0.2); }
+        .empty-col {
+          border: 1px dashed rgba(255,255,255,0.1);
+          border-radius: 8px;
+          padding: 24px;
+          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex: 1;
+        }
+        .empty-text {
+          font-family: 'Montserrat', sans-serif;
+          color: #4B5563;
+          font-size: 0.85rem;
+        }
+      `}</style>
+      <div className="pipeline-container">
+        <Navbar />
+        <div className="container-fluid py-4">
+          <div className="d-flex justify-content-between align-items-center mb-4 px-3">
+            <div>
+              <h1 className="pipeline-title">{job.title}</h1>
+              <p className="pipeline-subtitle">
+                {job.department}{job.department && job.location ? ' · ' : ''}{job.location} · {applications.length} applicants
+              </p>
+            </div>
+            <button className="btn-copy-apply"
+              onClick={() => {
+                const link = `${window.location.origin}/jobs/${job.id}/apply`;
+                navigator.clipboard.writeText(link);
+                alert('Application link copied!');
               }}>
-                {/* Column Header */}
-                <div style={{
-                  borderTop: `3px solid ${borderColor}`,
-                  borderRadius: 'var(--radius-md)',
-                  padding: '0.75rem 1rem',
-                  marginBottom: '0.5rem',
-                  background: 'var(--card-bg)',
-                  backdropFilter: 'blur(12px)',
+              Copy Apply Link
+            </button>
+          </div>
+
+          <div className="d-flex gap-4 px-3" style={{ overflowX: 'auto', paddingBottom: '1rem', alignItems: 'stretch' }}>
+            {columns.map((col) => {
+              const isSpecial = col.round_number === -1 || col.round_number === 999;
+              return (
+                <div key={col.round_number} className="kanban-col" style={{
+                  borderTopColor: col.round_type === 'rejected' ? '#EF4444' : col.round_type === 'hired' ? '#F59E0B' : '#7353F6'
                 }}>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <span style={{ fontFamily: 'var(--font-heading)', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                      {!isSpecial && `R${col.round_number}: `}{col.name}
-                    </span>
-                    <span className="chip" style={{ fontSize: '0.7rem', background: `${borderColor}22`, color: borderColor }}>
-                      {col.candidates.length}
-                    </span>
-                  </div>
-                  {!isSpecial && (
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      {col.round_type.replace('_', ' ')}
-                    </span>
-                  )}
-                </div>
-
-                {/* Cards */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {col.candidates.length === 0 ? (
-                    <div style={{
-                      padding: '2rem 1rem', textAlign: 'center',
-                      color: 'var(--text-muted)', fontSize: '0.8rem',
-                      border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)',
-                    }}>
-                      No candidates
+                  <div className="kanban-col-header">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <h3 className="kanban-col-title">
+                        {!isSpecial && `R${col.round_number}: `}{col.name}
+                      </h3>
+                      <span className="kanban-badge">{col.candidates.length}</span>
                     </div>
-                  ) : (
-                    col.candidates.map((app) => {
-                      const roundResult = getLastRoundResult(app);
-                      const isActing = actionLoading === app.id;
-                      return (
-                        <div key={app.id} className="card-glass" style={{ padding: '0.75rem' }}>
-                          <div className="d-flex justify-content-between align-items-start mb-1">
-                            <div>
-                              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                                {app.candidate_name}
+                    {!isSpecial && (
+                      <div className="kanban-subtext">
+                        {col.round_type === 'dsa_coding' && <Code size={12} />}
+                        {col.round_type === 'ai_interview' && <Sparkles size={12} />}
+                        {col.round_type === 'live_1on1' && <Video size={12} />}
+                        {col.round_type === 'manual_review' && <Clipboard size={12} />}
+                        {col.round_type.replace('_', ' ')}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="kanban-col-body">
+                    {col.candidates.length === 0 ? (
+                      <div className="empty-col">
+                        <span className="empty-text">No candidates yet</span>
+                      </div>
+                    ) : (
+                      col.candidates.map((app) => {
+                        const roundResult = getLastRoundResult(app);
+                        const isActing = actionLoading === app.id;
+                        return (
+                          <div key={app.id} className="card-candidate">
+                            <div className="cand-name">{app.candidate_name}</div>
+                            <div className="cand-email">{app.candidate_email}</div>
+
+                            {roundResult && (
+                              <div className={roundResult.status === 'completed' ? 'status-badge-completed' : 'status-badge-pending'}>
+                                {roundResult.status === 'completed' ? (
+                                  <><CheckCircle size={10} /> Completed</>
+                                ) : roundResult.status === 'pending' ? (
+                                  <><Clock size={10} /> Pending</>
+                                ) : (
+                                  <><Play size={10} /> {roundResult.status}</>
+                                )}
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                {app.candidate_email}
-                              </div>
-                            </div>
-                            {roundResult?.score != null && (
-                              <span className="chip" style={{
-                                fontSize: '0.7rem', fontWeight: 700,
-                                background: roundResult.score >= 70 ? 'var(--success-bg)' : roundResult.score >= 40 ? 'var(--warn-bg)' : 'var(--error-bg)',
-                                color: roundResult.score >= 70 ? 'var(--success)' : roundResult.score >= 40 ? 'var(--warn)' : 'var(--error)',
-                              }}>
-                                {Math.round(roundResult.score)}
-                              </span>
                             )}
-                          </div>
 
-                          {/* Round status badge */}
-                          {roundResult && (
-                            <div className="d-flex align-items-center gap-1 mb-2" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                              {roundResult.status === 'completed' ? (
-                                <><CheckCircle size={12} color="var(--success)" /> Completed</>
-                              ) : roundResult.status === 'pending' ? (
-                                <><Clock size={12} color="var(--warn)" /> Pending</>
-                              ) : (
-                                <><Play size={12} /> {roundResult.status}</>
-                              )}
-                            </div>
-                          )}
+                            {!isSpecial && app.stage !== 'rejected' && app.stage !== 'hired' && (
+                              <div className="card-actions">
+                                {(!roundResult || roundResult.status === 'pending') && !roundResult?.session_id && (
+                                  <button className="action-btn btn-start" disabled={isActing} onClick={() => handleStartRound(app.id)}>
+                                    <Play size={12} /> Start
+                                  </button>
+                                )}
 
-                          {/* Actions */}
-                          {!isSpecial && app.stage !== 'rejected' && app.stage !== 'hired' && (
-                            <div className="d-flex gap-1 flex-wrap">
-                              {/* Start round if not started yet */}
-                              {(!roundResult || roundResult.status === 'pending') && !roundResult?.session_id && (
-                                <button className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
-                                  style={{ fontSize: '0.7rem' }} disabled={isActing}
-                                  onClick={() => handleStartRound(app.id)}>
-                                  <Play size={12} /> Start
-                                </button>
-                              )}
-
-                              {/* View report if completed */}
-                              {roundResult?.status === 'completed' && roundResult?.report_id && (
-                                <button className="btn btn-sm btn-outline-info d-flex align-items-center gap-1"
-                                  style={{ fontSize: '0.7rem' }}
-                                  onClick={() => {
+                                {roundResult?.status === 'completed' && roundResult?.report_id && (
+                                  <button className="action-btn btn-scorecard" disabled={isActing} onClick={() => {
                                     const candId = roundResult.candidate_id;
                                     if (candId) navigate(`/recruiter/candidates/${candId}/report`);
                                   }}>
-                                  <FileText size={12} /> Report
+                                    <FileText size={12} /> Report
+                                  </button>
+                                )}
+
+                                {roundResult?.live_room_id && roundResult?.status !== 'completed' && (
+                                  <button className="action-btn btn-scorecard" disabled={isActing} onClick={() => navigate(`/recruiter/live-room/${roundResult.live_room_id}`)}>
+                                    <Video size={12} /> Join Call
+                                  </button>
+                                )}
+
+                                <button className="action-btn btn-scorecard" disabled={isActing} onClick={() => navigate(`/recruiter/scorecard/${app.id}`)}>
+                                  <BarChart3 size={12} /> Scorecard
                                 </button>
-                              )}
 
-                              {/* Open live room for HR */}
-                              {roundResult?.live_room_id && roundResult?.status !== 'completed' && (
-                                <button className="btn btn-sm btn-outline-info d-flex align-items-center gap-1"
-                                  style={{ fontSize: '0.7rem' }}
-                                  onClick={() => navigate(`/recruiter/live-room/${roundResult.live_room_id}`)}>
-                                  <Video size={12} /> Join Call
+                                {roundResult?.status === 'completed' && (
+                                  <button className="action-btn btn-scorecard" style={{borderColor: 'rgba(16,185,129,0.3)', color: '#10b981'}} disabled={isActing} onClick={() => handleAdvance(app.id)}>
+                                    <ChevronRight size={12} /> Advance
+                                  </button>
+                                )}
+
+                                <button className="action-btn btn-reject" disabled={isActing} onClick={() => handleReject(app.id)}>
+                                  <XCircle size={12} /> Reject
                                 </button>
-                              )}
+                              </div>
+                            )}
 
-                              {/* Scorecard link */}
-                              <button className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
-                                style={{ fontSize: '0.7rem' }}
-                                onClick={() => navigate(`/recruiter/scorecard/${app.id}`)}>
-                                <BarChart3 size={12} /> Scorecard
-                              </button>
-
-                              {/* Advance */}
-                              {roundResult?.status === 'completed' && (
-                                <button className="btn btn-sm d-flex align-items-center gap-1"
-                                  style={{ fontSize: '0.7rem', background: 'var(--success-bg)', color: 'var(--success)', border: 'none' }}
-                                  disabled={isActing} onClick={() => handleAdvance(app.id)}>
-                                  <ChevronRight size={12} /> Advance
-                                </button>
-                              )}
-
-                              {/* Reject */}
-                              <button className="btn btn-sm d-flex align-items-center gap-1"
-                                style={{ fontSize: '0.7rem', background: 'var(--error-bg)', color: 'var(--error)', border: 'none' }}
-                                disabled={isActing} onClick={() => handleReject(app.id)}>
-                                <XCircle size={12} /> Reject
-                              </button>
-                            </div>
-                          )}
-
-                          {app.stage === 'hired' && (
-                            <div className="d-flex align-items-center gap-1" style={{ fontSize: '0.8rem', color: '#f59e0b' }}>
-                              <Award size={14} /> Hired
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
+                            {app.stage === 'hired' && (
+                              <div className="d-flex align-items-center gap-1 mt-2" style={{ fontSize: '0.8rem', color: '#f59e0b' }}>
+                                <Award size={14} /> Hired
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

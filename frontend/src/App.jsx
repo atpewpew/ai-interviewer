@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
+import PricingPage from './pages/PricingPage';
 import RecruiterLogin from './pages/recruiter/RecruiterLogin';
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
 import CreateInterview from './pages/recruiter/CreateInterview';
@@ -32,6 +33,7 @@ function App() {
 
       {/* Auth */}
       <Route path="/login" element={<RecruiterLogin />} />
+      <Route path="/pricing" element={<PricingPage />} />
 
       {/* Recruiter routes */}
       <Route

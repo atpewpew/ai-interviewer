@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogIn, UserPlus } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import logoImg from '../../assets/logo.png';
+import '../../styles/auth.css';
 
 export default function RecruiterLogin() {
   const [isRegister, setIsRegister] = useState(false);
@@ -32,119 +34,152 @@ export default function RecruiterLogin() {
   };
 
   return (
-    <div className="page-container min-vh-100 d-flex align-items-center justify-content-center">
-      <div className="card-glass fade-in" style={{ width: '100%', maxWidth: 420, padding: '2.5rem' }}>
-        <div className="text-center mb-4">
-          <div
-            className="mx-auto mb-3"
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--gradient)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontFamily: 'var(--font-heading)',
-              fontSize: '1.3rem',
-            }}
-          >
-            IO
+    <div className="auth-layout">
+      {/* ── Left Pane: Brand Canvas (desktop only) ── */}
+      <div className="auth-brand-pane">
+        <div className="fluid-mesh" />
+        <div className="grid-overlay" />
+
+        <div className="auth-brand-content">
+          <div className="auth-brand-logo">
+            <img src={logoImg} alt="InterviewOS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+            <span className="logo-text">
+              INTERVIEW<span className="cyan">OS</span>
+            </span>
           </div>
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: 'var(--text-primary)' }}>
-            {isRegister ? 'CREATE ACCOUNT' : 'WELCOME BACK'}
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            {isRegister ? 'Set up your recruiter account' : 'Sign in to your recruiter portal'}
+
+          <h1 className="auth-brand-headline">
+            Hire <span className="gradient-word">Smarter</span>,
+            <br />
+            Not Harder.
+          </h1>
+
+          <p className="auth-brand-subtext">
+            Replace disjointed technical screening with an AI-driven
+            environment that conducts real-time, high-signal technical
+            interviews.
           </p>
+
+          <div className="auth-brand-footer">
+            <div className="line line-short" />
+            <span>System Ready</span>
+            <div className="line line-grow" />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Right Pane: Form Area ── */}
+      <div className="auth-form-pane">
+        {/* Mobile header */}
+        <div className="auth-mobile-header">
+          <img src={logoImg} alt="InterviewOS" style={{ width: 24, height: 24, objectFit: 'contain' }} />
+          <span className="logo-text-sm">
+            INTERVIEW<span className="cyan">OS</span>
+          </span>
         </div>
 
-        {error && (
-          <div className="alert alert-danger py-2" style={{ fontSize: '0.85rem' }}>
-            {error}
-          </div>
-        )}
+        <div className="auth-form-container">
+          {/* Back link */}
+          <Link to="/" className="auth-back-link">
+            <ArrowLeft size={16} />
+            Back
+          </Link>
 
-        <form onSubmit={handleSubmit}>
-          {isRegister && (
-            <div className="mb-3">
-              <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                Full Name
-              </label>
-              <input
-                type="text"
-                className="form-control-ios"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="John Doe"
-              />
-            </div>
-          )}
+          <h2 className="auth-form-title">
+            {isRegister ? 'Create Account' : 'Welcome Back'}
+          </h2>
+          <p className="auth-form-subtitle">
+            {isRegister
+              ? 'Start your free trial. No credit card required.'
+              : 'Sign in to your recruiter portal.'}
+          </p>
 
-          <div className="mb-3">
-            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-              Email
-            </label>
-            <input
-              type="email"
-              className="form-control-ios"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="recruiter@company.com"
-            />
-          </div>
+          {error && <div className="auth-error-message">{error}</div>}
 
-          <div className="mb-4">
-            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-              Password
-            </label>
-            <input
-              type="password"
-              className="form-control-ios"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              placeholder="Min 6 characters"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn-gradient w-100 d-flex align-items-center justify-content-center gap-2"
-            disabled={loading}
-            style={{ padding: '0.75rem' }}
-          >
-            {loading ? (
-              <span className="spinner-border spinner-border-sm" />
-            ) : isRegister ? (
-              <>
-                <UserPlus size={18} />
-                Create Account
-              </>
-            ) : (
-              <>
-                <LogIn size={18} />
-                Sign In
-              </>
+          <form onSubmit={handleSubmit}>
+            {/* Name field (register only) */}
+            {isRegister && (
+              <div className="auth-input-group">
+                <input
+                  type="text"
+                  className="auth-floating-input"
+                  id="auth-name"
+                  placeholder=" "
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+                <label className="auth-floating-label" htmlFor="auth-name">
+                  Full Name
+                </label>
+              </div>
             )}
-          </button>
-        </form>
 
-        <div className="text-center mt-3">
-          <button
-            className="btn btn-link"
-            style={{ color: 'var(--lavender)', fontSize: '0.85rem', textDecoration: 'none' }}
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setError('');
-            }}
-          >
-            {isRegister ? 'Already have an account? Sign in' : "Don't have an account? Register"}
-          </button>
+            {/* Email field */}
+            <div className="auth-input-group">
+              <input
+                type="email"
+                className="auth-floating-input"
+                id="auth-email"
+                placeholder=" "
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <label className="auth-floating-label" htmlFor="auth-email">
+                Work Email
+              </label>
+            </div>
+
+            {/* Password field */}
+            <div className="auth-input-group">
+              <input
+                type="password"
+                className="auth-floating-input"
+                id="auth-password"
+                placeholder=" "
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+              <label className="auth-floating-label" htmlFor="auth-password">
+                Password (min. 6 characters)
+              </label>
+            </div>
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              className="auth-submit-btn"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="auth-spinner" />
+              ) : (
+                <>
+                  {isRegister ? 'Start Free Trial' : 'Sign In'}
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Toggle between login/register */}
+          <div className="auth-toggle-text">
+            {isRegister
+              ? 'Already have an account?'
+              : "Don't have an account?"}
+            <button
+              className="auth-toggle-btn"
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setError('');
+              }}
+            >
+              {isRegister ? 'Log in' : 'Register'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
