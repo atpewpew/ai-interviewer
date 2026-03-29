@@ -24,6 +24,11 @@ class DeepgramTranscriber:
         self._confidence_sum: float = 0.0
         self._confidence_count: int = 0
 
+    @staticmethod
+    def _is_idle_timeout_error(message: str) -> bool:
+        msg = (message or "").lower()
+        return "net0001" in msg or "did not receive audio data" in msg
+
     async def connect(self):
         """Open a live transcription connection."""
         self.connection = self.client.listen.asyncwebsocket.v("1")
@@ -56,7 +61,11 @@ class DeepgramTranscriber:
             try:
                 await self.connection.send(audio_chunk)
             except Exception as e:
-                logger.error("send() failed - %s", e)
+                msg = str(e)
+                if self._is_idle_timeout_error(msg):
+                    logger.info("Deepgram send skipped after idle timeout; waiting to reconnect")
+                else:
+                    logger.error("Deepgram send failed: %s", msg)
                 self._is_connected = False
 
     async def wait_for_final_transcript(self, timeout: float = 10.0) -> str:
@@ -65,17 +74,23 @@ class DeepgramTranscriber:
             try:
                 await asyncio.wait_for(self._transcript_ready.wait(), timeout=timeout)
             except asyncio.TimeoutError:
-                logger.warning("Transcript timeout — returning what we have")
+                if self.final_transcript.strip():
+                    logger.info("Transcript finalize timeout — returning partial transcript")
+                else:
+                    logger.info("Transcript timeout — no final transcript received")
         return self.final_transcript.strip()
 
     async def close(self):
         """Close the Deepgram connection."""
-        self._is_connected = False
-        if self.connection:
+        was_connected = self._is_connected
+        if self.connection and was_connected:
             try:
                 await self.connection.finish()
             except Exception:
                 pass
+        self._is_connected = False
+        self.connection = None
+        self._transcript_ready.set()
 
     def get_speech_metrics(self) -> dict:
         """Return accumulated speech quality metrics for the current turn."""
@@ -156,7 +171,11 @@ class DeepgramTranscriber:
             logger.error("Error processing transcript: %s", str(e))
 
     async def _on_error(self, _self, error, **kwargs):
-        logger.error("Deepgram error: %s", str(error))
+        msg = str(error)
+        if self._is_idle_timeout_error(msg):
+            logger.info("Deepgram idle timeout (no audio); reconnecting on next audio chunk")
+        else:
+            logger.error("Deepgram error: %s", msg)
         self._is_connected = False
         self._transcript_ready.set()
     async def _on_close(self, _self, close, **kwargs):

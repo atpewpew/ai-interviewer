@@ -1,5 +1,8 @@
 .env
 **/__pycache__/
 .agent/
+.agents
 design-system
 LICENSE
+skills-*
+.github

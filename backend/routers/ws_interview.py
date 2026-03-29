@@ -47,6 +47,21 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
         await websocket.close()
         return
 
+    raw_topics = interview.get("topics") or []
+    if not isinstance(raw_topics, list):
+        raw_topics = [str(raw_topics)]
+    topics = [str(t).strip() for t in raw_topics if str(t).strip()]
+    if not topics:
+        topics = ["General"]
+        logger.warning(
+            "Interview %s has empty topics; defaulting to ['General']",
+            session["interview_id"],
+        )
+        await db.interviews.update_one(
+            {"_id": ObjectId(session["interview_id"])},
+            {"$set": {"topics": topics}},
+        )
+
     candidate = await db.candidates.find_one(
         {"_id": ObjectId(session["candidate_id"])}
     )
@@ -65,7 +80,7 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
         "candidate_id": session["candidate_id"],
         "job_role": interview["job_role"],
         "job_description": interview["job_description"],
-        "topics": interview["topics"],
+        "topics": topics,
         "difficulty": interview["difficulty"],
         "total_questions": interview["total_questions"],
         "resume_summary": resume_summary,
@@ -87,7 +102,6 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
 
     # Deepgram is connected lazily per turn when the first audio byte arrives.
     transcriber = None
-    dg_connect_tried = False
 
     # Server-side proctoring (MediaPipe)
     proctor = ProctoringAnalyzer()
@@ -110,7 +124,7 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
 
         state["current_turn"] = 1
         state["current_question"] = first_q["question"]
-        state["current_topic"] = first_q.get("topic", state["topics"][0])
+        state["current_topic"] = first_q.get("topic") or state["topics"][0]
 
         await websocket.send_json({
             "type": "question",
@@ -133,13 +147,15 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
             # Handle binary audio data
             if "bytes" in message:
                 if collecting_audio:
-                    if not dg_connect_tried:
-                        dg_connect_tried = True
+                    # Reconnect automatically if Deepgram was closed (e.g. idle timeout).
+                    if transcriber is None or not transcriber._is_connected:
+                        if transcriber is not None:
+                            await transcriber.close()
                         transcriber = DeepgramTranscriber()
                         try:
                             await transcriber.connect()
                         except Exception as e:
-                            logger.error("Failed to connect Deepgram: %s", e)
+                            logger.warning("Deepgram unavailable for session %s: %s", session_id, e)
                             transcriber = None
 
                     if transcriber and transcriber._is_connected:
@@ -194,7 +210,6 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                     )
 
                     collecting_audio = True
-                    dg_connect_tried = False
                     if state.get("_interview_complete"):
                         break
                     continue
@@ -231,7 +246,6 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
                     )
 
                     collecting_audio = True
-                    dg_connect_tried = False
                     if state.get("_interview_complete"):
                         break
 

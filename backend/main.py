@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import connect_db, close_db, FRONTEND_URL
 from routers import auth, interviews, candidates, sessions, reports, ws_interview, tts, jobs, applications, dsa, live_room, scorecard
+from services.email_service import log_email_provider_health
 
 app = FastAPI(title="InterviewOS API", version="2.0.0")
 
@@ -30,6 +31,7 @@ app.include_router(ws_interview.router, tags=["WebSocket Interview"])
 @app.on_event("startup")
 async def startup():
     await connect_db()
+    log_email_provider_health()
 
 
 @app.on_event("shutdown")

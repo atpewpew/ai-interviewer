@@ -1,11 +1,13 @@
 """
-Email service — sends automated emails via Resend (preferred) or SMTP fallback.
+Email service — sends automated emails via SMTP (preferred) with Resend fallback.
 Used for candidate notifications (advance to next round, interview links, etc.)
 """
 import logging
 from config import RESEND_API_KEY, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, FRONTEND_URL
 
 logger = logging.getLogger(__name__)
+_SEQUENZY_SMTP_HOST = "smtp.sequenzy.com"
+_SMTP_TIMEOUT_SECONDS = 20
 
 # ── Resend setup ──
 _resend_available = False
@@ -20,16 +22,113 @@ if RESEND_API_KEY:
 
 
 def _smtp_configured() -> bool:
-    return bool(SMTP_USER and SMTP_PASSWORD)
+    return bool(SMTP_HOST and SMTP_PORT and _smtp_username() and SMTP_PASSWORD and _smtp_sender())
+
+
+def _smtp_username() -> str:
+    """Username for SMTP login. Sequenzy accepts a generic username like 'api'."""
+    if SMTP_USER:
+        return SMTP_USER
+    if SMTP_HOST.lower() == _SEQUENZY_SMTP_HOST:
+        return "api"
+    return ""
+
+
+def _smtp_sender() -> str:
+    """From address must be a valid sender email for most SMTP providers."""
+    if SMTP_FROM:
+        return SMTP_FROM
+    if SMTP_USER and "@" in SMTP_USER:
+        return SMTP_USER
+    return ""
+
+
+def get_email_provider_health() -> dict:
+    """Return non-sensitive startup diagnostics for configured email providers."""
+    smtp_user = _smtp_username()
+    smtp_sender = _smtp_sender()
+
+    smtp_missing = []
+    if not SMTP_HOST:
+        smtp_missing.append("SMTP_HOST")
+    if not SMTP_PORT:
+        smtp_missing.append("SMTP_PORT")
+    if not smtp_user:
+        smtp_missing.append("SMTP_USER")
+    if not SMTP_PASSWORD:
+        smtp_missing.append("SMTP_PASSWORD")
+    if not smtp_sender:
+        smtp_missing.append("SMTP_FROM")
+
+    smtp_usable = len(smtp_missing) == 0
+
+    resend_missing = []
+    if not RESEND_API_KEY:
+        resend_missing.append("RESEND_API_KEY")
+    if RESEND_API_KEY and not _resend_available:
+        resend_missing.append("resend-sdk")
+
+    return {
+        "smtp": {
+            "usable": smtp_usable,
+            "host": SMTP_HOST,
+            "port": SMTP_PORT,
+            "from": smtp_sender,
+            "missing": smtp_missing,
+        },
+        "resend": {
+            "usable": _resend_available,
+            "missing": resend_missing,
+        },
+        "effective_order": ["smtp", "resend"],
+    }
+
+
+def log_email_provider_health() -> None:
+    """Log provider readiness once at app boot to simplify config debugging."""
+    health = get_email_provider_health()
+    smtp = health["smtp"]
+    resend = health["resend"]
+
+    logger.info(
+        "Email startup health | order=%s | smtp_usable=%s host=%s port=%s from=%s | resend_usable=%s",
+        " -> ".join(health["effective_order"]),
+        smtp["usable"],
+        smtp["host"] or "-",
+        smtp["port"] or "-",
+        smtp["from"] or "-",
+        resend["usable"],
+    )
+
+    if not smtp["usable"]:
+        logger.warning("SMTP startup config incomplete; missing: %s", ", ".join(smtp["missing"]))
+    if not resend["usable"] and resend["missing"]:
+        logger.info("Resend not active; missing: %s", ", ".join(resend["missing"]))
 
 
 def send_email(to_email: str, subject: str, html_body: str) -> bool:
-    """Send an email via Resend (preferred) or SMTP fallback. Returns True on success."""
-    if _resend_available:
-        return _send_via_resend(to_email, subject, html_body)
+    """Send email via SMTP first, then Resend fallback. Returns True on success."""
+    providers = []
     if _smtp_configured():
-        return _send_via_smtp(to_email, subject, html_body)
-    logger.warning("No email provider configured — email to %s skipped", to_email)
+        providers.append(("SMTP", _send_via_smtp))
+    if _resend_available:
+        providers.append(("Resend", _send_via_resend))
+
+    if not providers:
+        logger.warning("No email provider configured — email to %s skipped", to_email)
+        return False
+
+    for index, (provider_name, sender_func) in enumerate(providers):
+        if sender_func(to_email, subject, html_body):
+            return True
+        if index < len(providers) - 1:
+            logger.warning(
+                "%s send failed for %s — trying next provider",
+                provider_name,
+                to_email,
+            )
+
+    logger.error("All configured email providers failed for %s", to_email)
     return False
 
 
@@ -53,18 +152,37 @@ def _send_via_smtp(to_email: str, subject: str, html_body: str) -> bool:
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
+
     try:
+        smtp_user = _smtp_username()
+        smtp_sender = _smtp_sender()
+        if not smtp_user or not SMTP_PASSWORD:
+            logger.error("SMTP credentials missing (username/password)")
+            return False
+        if not smtp_sender:
+            logger.error("SMTP_FROM missing or invalid; set a valid sender email address")
+            return False
+
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = SMTP_FROM or SMTP_USER
+        msg["From"] = smtp_sender
         msg["To"] = to_email
         msg.attach(MIMEText(html_body, "html"))
 
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.send_message(msg)
-        logger.info("Email sent via SMTP to %s: %s", to_email, subject)
+        # Port 465 uses implicit TLS (SMTP_SSL); 587/2525 use STARTTLS.
+        if SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=_SMTP_TIMEOUT_SECONDS) as server:
+                server.login(smtp_user, SMTP_PASSWORD)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=_SMTP_TIMEOUT_SECONDS) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(smtp_user, SMTP_PASSWORD)
+                server.send_message(msg)
+
+        logger.info("Email sent via SMTP (%s:%s) to %s: %s", SMTP_HOST, SMTP_PORT, to_email, subject)
         return True
     except Exception as e:
         logger.error("SMTP email failed to %s: %s", to_email, e)

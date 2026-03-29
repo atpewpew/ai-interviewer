@@ -12,7 +12,8 @@ MongoDB collection: applications
 import logging
 from datetime import datetime, timezone
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, Form, status
+from starlette.concurrency import run_in_threadpool
 from config import db, FRONTEND_URL
 from dependencies import get_current_user
 from models.schemas import ApplicationResponse, AdvanceApplicationRequest
@@ -51,6 +52,7 @@ def _format(doc: dict) -> ApplicationResponse:
 @router.post("/apply/{job_id}", response_model=ApplicationResponse, status_code=201)
 async def apply_to_job(
     job_id: str,
+    background_tasks: BackgroundTasks,
     name: str = Form(...),
     email: str = Form(...),
     github_username: str = Form(""),
@@ -69,7 +71,7 @@ async def apply_to_job(
         raise HTTPException(status_code=400, detail="Already applied to this job")
 
     resume_bytes = await resume.read()
-    resume_text = parse_resume_pdf(resume_bytes)
+    resume_text = await run_in_threadpool(parse_resume_pdf, resume_bytes)
 
     now = datetime.now(timezone.utc)
     doc = {
@@ -87,16 +89,23 @@ async def apply_to_job(
     result = await db.applications.insert_one(doc)
     doc["_id"] = result.inserted_id
 
-    # Send confirmation email (fire-and-forget)
-    await send_application_received(name, email, job.get("title", "this position"))
-
-    # Auto-start the first round of the pipeline
-    try:
-        await _auto_start_current_round(doc, job)
-    except Exception as e:
-        logger.error("Auto-start first round failed for app %s: %s", str(doc["_id"]), e)
+    # Run notifications and first-round auto-start after response is returned.
+    background_tasks.add_task(_post_apply_work, doc, job, name, email)
 
     return _format(doc)
+
+
+async def _post_apply_work(app_doc: dict, job_doc: dict, candidate_name: str, candidate_email: str):
+    """Post-response work for apply endpoint to keep user-facing latency low."""
+    try:
+        await send_application_received(candidate_name, candidate_email, job_doc.get("title", "this position"))
+    except Exception as e:
+        logger.error("Application email failed for %s: %s", candidate_email, e)
+
+    try:
+        await _auto_start_current_round(app_doc, job_doc)
+    except Exception as e:
+        logger.error("Auto-start first round failed for app %s: %s", str(app_doc.get("_id")), e)
 
 
 # ── List applications for a job (Kanban data) ──
@@ -230,6 +239,13 @@ async def _start_ai_interview_round(app: dict, job: dict, round_config: dict):
     app_id = str(app["_id"])
     ic = round_config.get("interview_config") or {}
 
+    raw_topics = ic.get("topics") or ["General"]
+    if not isinstance(raw_topics, list):
+        raw_topics = [str(raw_topics)]
+    topics = [str(t).strip() for t in raw_topics if str(t).strip()]
+    if not topics:
+        topics = ["General"]
+
     now = datetime.now(timezone.utc)
 
     # Check if already started (idempotent)
@@ -254,7 +270,7 @@ async def _start_ai_interview_round(app: dict, job: dict, round_config: dict):
         "title": f"{job['title']} — {round_config['name']}",
         "job_role": job["title"],
         "job_description": job["description"],
-        "topics": ic.get("topics", ["General"]),
+        "topics": topics,
         "difficulty": ic.get("difficulty", "medium"),
         "total_questions": ic.get("total_questions", 7),
         "job_id": str(job["_id"]),
