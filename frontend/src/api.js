@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -92,7 +92,9 @@ export const endLiveRoom = (roomId) => api.post(`/live-room/${roomId}/end`);
 export const getScorecard = (appId) => api.get(`/scorecard/${appId}`);
 
 // WebSocket URL
-export const getWSUrl = (sessionId) =>
-  `ws://localhost:8000/ws/interview/${sessionId}`;
+export const getWSUrl = (sessionId) => {
+  const wsBase = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000';
+  return `${wsBase}/ws/interview/${sessionId}`;
+};
 
 export default api;
